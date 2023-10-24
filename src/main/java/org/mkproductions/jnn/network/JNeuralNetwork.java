@@ -1,27 +1,26 @@
 package org.mkproductions.jnn.network;
 
-import com.sun.security.jgss.GSSUtil;
+
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Random;
 
 public class JNeuralNetwork {
     private final int numberOfInputNode;
-    private final int numberOfHiddenLayers;
     private final int[] hiddenNodeSchema;
     private final int numberOfOutputNode;
-
-    RealMatrix[] weightsMatrices;
-    RealMatrix[] biasesMatrices;
-    RealMatrix[] outputMatrices;
-
+    private final RealMatrix[] weightsMatrices;
+    private final RealMatrix[] biasesMatrices;
+    private final RealMatrix[] outputMatrices;
+    private final RealMatrix[] outputDeltaMatrices;
+    private final RealMatrix[] outputGradientMatrices;
     private static double learningRate = 0.1;
 
     public JNeuralNetwork(int numberOfInputNode, int[] hiddenNodeSchema, int numberOfOutputNode) {
         // Storing the design of the Neural Network
         this.numberOfInputNode = numberOfInputNode;
-        this.numberOfHiddenLayers = hiddenNodeSchema.length;
         this.hiddenNodeSchema = hiddenNodeSchema;
         this.numberOfOutputNode = numberOfOutputNode;
 
@@ -29,7 +28,9 @@ public class JNeuralNetwork {
         int networkSchemaLength = hiddenNodeSchema.length + 1;
         this.weightsMatrices = new RealMatrix[networkSchemaLength];
         this.biasesMatrices = new RealMatrix[networkSchemaLength];
-
+        this.outputMatrices = new RealMatrix[networkSchemaLength];
+        this.outputDeltaMatrices = new RealMatrix[networkSchemaLength];
+        this.outputGradientMatrices = new RealMatrix[networkSchemaLength];
         // Assign weights and biases to matrices arrays
         for (int a = 0; a < this.weightsMatrices.length; a++) {
             if (a == 0) {
@@ -48,7 +49,11 @@ public class JNeuralNetwork {
         }
     }
 
-    public double[] processInputs(double[] inputs) throws Exception {
+    /**
+     * @param inputs A double array to predict the output.
+     * @return A double array of output predicted by the network.
+     */
+    public double[] processInputs(double @NotNull [] inputs) throws Exception {
         if (inputs.length != this.numberOfInputNode) throw new Exception("Mismatch length of inputs to the network.");
         RealMatrix inputMatrix = MatrixUtils.createRealMatrix(new double[][]{inputs}).transpose();
         for (int a = 0; a < this.weightsMatrices.length; a++) {
@@ -65,13 +70,60 @@ public class JNeuralNetwork {
         return outputMatrices[this.outputMatrices.length - 1].transpose().getRow(0);
     }
 
+    /**
+     * Function to train inputs with targets.
+     * Random indexing is ussd to create a better model.
+     *
+     * @param input  2D array of inputs to be learned by network.
+     * @param target 2D array to train the network as per inputs index.
+     */
+    // Function to perform backward-propagation in the neural network.
     private void backPropagate(double[] input, double[] target) throws Exception {
-        // Function to perform backward-propagation in the neural network.
+        if (input.length != this.numberOfInputNode) throw new Exception("Mismatch length of inputs to the network.");
+        RealMatrix outputError = MatrixUtils.createRealMatrix(new double[][]{target}).transpose().subtract(this.outputMatrices[this.outputMatrices.length - 1]);
+        for (int layerIndex = this.weightsMatrices.length - 1; layerIndex > 0; layerIndex--) {
+            RealMatrix outputMatrix = outputMatrices[layerIndex];
+            RealMatrix previousOutputMatrix = outputMatrices[layerIndex - 1];
+
+            RealMatrix gradientMatrix = deactivateOutput(outputMatrix, ActivationFunction.SIGMOID);
+            gradientMatrix = elementWiseMultiply(gradientMatrix, outputError);
+            gradientMatrix = gradientMatrix.scalarMultiply(learningRate);
+
+            outputDeltaMatrices[layerIndex] = gradientMatrix.multiply(previousOutputMatrix.transpose());
+
+            RealMatrix weightTranspose = this.weightsMatrices[layerIndex].transpose();
+            outputError = weightTranspose.multiply(gradientMatrix);
+            this.outputGradientMatrices[layerIndex] = gradientMatrix;
+        }
+
+        for (int a = 1; a < this.weightsMatrices.length; a++) {
+            this.weightsMatrices[a] = this.weightsMatrices[a].add(outputDeltaMatrices[a]);
+            this.biasesMatrices[a] = this.biasesMatrices[a].add(outputGradientMatrices[a]);
+        }
     }
 
+    /**
+     * Function to train inputs with targets.
+     * Random indexing is ussd to create a better model.
+     *
+     * @param epochs  number of iteration for taken to perform back-propagation.
+     * @param inputs  2D array of inputs to be learned by network.
+     * @param targets 2D array to train the network as per the random input index.
+     */
     public void train(double[][] inputs, double[][] targets, int epochs) throws Exception {
-        // Function to train inputs with targets.
-        // Random indexing is ussd to create a better model.
+        if (inputs[0].length != this.numberOfInputNode || targets[0].length != this.numberOfOutputNode)
+            throw new Exception("Mismatch inputs or outputs size.");
+        Random random = new Random();
+        for (int a = 0; a < epochs; a++) {
+            System.out.println("Epoch: " + (a + 1));
+            int randomIndex = random.nextInt(inputs.length);
+            backPropagate(inputs[randomIndex], targets[randomIndex]);
+            double[] output = processInputs(inputs[randomIndex]);
+            double[] target = targets[randomIndex];
+            for (int b = 0; b < output.length; b++) {
+                System.out.println("Error: " + (target[b] - output[b]));
+            }
+        }
     }
 
     private void randomizeMatrix(RealMatrix matrix) {
@@ -97,16 +149,26 @@ public class JNeuralNetwork {
         return newMatrix;
     }
 
+    private static RealMatrix elementWiseMultiply(RealMatrix matrix1, RealMatrix matrix2) throws Exception {
+        if (matrix1.getRowDimension() != matrix2.getRowDimension() || matrix1.getColumnDimension() != matrix2.getColumnDimension()) {
+            throw new Exception("Matrices must have the same dimensions for element-wise multiplication.");
+        }
+        int numRows = matrix1.getRowDimension();
+        int numCols = matrix1.getColumnDimension();
+        RealMatrix result = MatrixUtils.createRealMatrix(numRows, numCols);
+        for (int i = 0; i < numRows; i++)
+            for (int j = 0; j < numCols; j++)
+                result.setEntry(i, j, matrix1.getEntry(i, j) * matrix2.getEntry(i, j));
+        return result;
+    }
+
+
     public int getNumberOfInputNode() {
         return numberOfInputNode;
     }
 
-    public int getNumberOfHiddenLayers() {
-        return numberOfHiddenLayers;
-    }
-
-    public int[] getHiddenNodeSchema() {
-        return hiddenNodeSchema;
+    public int getHiddenNodeCount(int a) {
+        return this.hiddenNodeSchema[a];
     }
 
     public int getNumberOfOutputNode() {
