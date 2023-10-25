@@ -1,15 +1,15 @@
-package org.mkproductions.jnn.entity;
+package com.mkproductions.jnn.entity;
 
 public class Layer {
-    private final int activationFunction;
+    private final ActivationFunction activationFunction;
     private final int numberOfNodes;
 
-    public Layer(int activationFunction, int numberOfNodes) {
+    public Layer(int numberOfNodes, ActivationFunction activationFunction) {
         this.activationFunction = activationFunction;
         this.numberOfNodes = numberOfNodes;
     }
 
-    public int getActivationFunction() {
+    public ActivationFunction getActivationFunction() {
         return activationFunction;
     }
 
