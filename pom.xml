@@ -13,6 +13,7 @@
         <maven.compiler.target>20</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -26,5 +27,4 @@
             <version>3.6.1</version>
         </dependency>
     </dependencies>
-
 </project>

@@ -1,56 +1,48 @@
 package com.mkproductions;
 
+
 import com.mkproductions.jnn.entity.ActivationFunction;
 import com.mkproductions.jnn.entity.Layer;
+import com.mkproductions.jnn.entity.Matrix;
+import com.mkproductions.jnn.graphics.MyFrame;
 import com.mkproductions.jnn.network.JNeuralNetwork;
 
+import javax.swing.*;
 import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) {
+        MyFrame graphicsFrame = new MyFrame("Main Graphics");
+        graphicsFrame.setFrameTimer(new Timer(1000 / 60, e -> graphicsFrame.repaint()));
         try {
-            process();
+            graphicsFrame.startRendering();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
 
-    private static void process() throws Exception {
-        double[] input = {1, 0, 1, 0};
-        double[] output;
-        double[][] trainingInputs = {
-                {0, 0},
-                {0, 1},
-                {1, 0},
-                {1, 1}
-        };
-        double[][] trainingTargets = {{0}, {1}, {1}, {0}};
-
-        JNeuralNetwork jnn = new JNeuralNetwork(
-                0.0001,
-                input.length,
-                new Layer(5, ActivationFunction.RE_LU),
-                new Layer(5, ActivationFunction.RE_LU),
-                new Layer(4, ActivationFunction.RE_LU)
-        );
-
-        System.out.println("JNN");
-        jnn.printNetwork();
-//        System.out.println("TNN");
-//        // Processing before training
-        output = jnn.processInputs(input);
-        System.out.println("Network output: " + Arrays.toString(output));
-//
-//        // Training
-//        jnn.train(trainingInputs, trainingTargets, 1000);
-//        System.out.println("After training: ");
-//
-//        // Processing after training.
-//        output = jnn.processInputs(input);
-//        System.out.println("Network output: " + Arrays.toString(output));
-    }
-
-    private static double map(double value, double fromMin, double fromMax, double toMin, double toMax) {
-        return toMin + (value - fromMin) * (toMax - toMin) / (fromMax - fromMin);
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//        double[][] trainingInputs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+//        double[][] trainingTargets = {
+//                {0},
+//                {1},
+//                {1},
+//                {0}
+//        };
+//        JNeuralNetwork jnn = new JNeuralNetwork(
+//                2,
+//                new Layer(4, ActivationFunction.SIGMOID),
+//                new Layer(1, ActivationFunction.SIGMOID)
+//        );
+//        int epochs = 100;
+//        double[] testingInputs = new double[]{0, 0};
+//        jnn.setLearningRate(0.001);
+//        try {
+//            System.out.println("Network output: " + Arrays.toString(jnn.processInputs(testingInputs)));
+//            jnn.train(trainingInputs, trainingTargets, epochs);
+//            System.out.println("After training for " + epochs + " times");
+//            System.out.println(Arrays.toString(jnn.processInputs(testingInputs)));
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
     }
 }
