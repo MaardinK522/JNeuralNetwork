@@ -1,14 +1,11 @@
 package com.mkproductions;
 
 
-import com.mkproductions.jnn.entity.ActivationFunction;
-import com.mkproductions.jnn.entity.Layer;
 import com.mkproductions.jnn.entity.Matrix;
 import com.mkproductions.jnn.graphics.MyFrame;
 import com.mkproductions.jnn.network.JNeuralNetwork;
 
 import javax.swing.*;
-import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) {
@@ -19,7 +16,6 @@ public class Main {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //        double[][] trainingInputs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
 //        double[][] trainingTargets = {

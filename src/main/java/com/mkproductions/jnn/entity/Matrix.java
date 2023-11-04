@@ -30,33 +30,27 @@ public class Matrix {
         if (this.getColumn() != matrix.getRow())
             throw new RuntimeException("Matrix multiplication not possible.\n Cause " + this.getColumn() + " != " + matrix.getRow());
         Matrix result = new Matrix(this.getRow(), matrix.getColumn());
-        for (int a = 0; a < result.getRow(); a++) {
+        for (int a = 0; a < result.getRow(); a++)
             for (int b = 0; b < result.getColumn(); b++) {
                 double sum = 0;
-                for (int k = 0; k < this.getColumn(); k++)
-                    sum += this.getEntry(a, k) * matrix.getEntry(k, b);
+                for (int k = 0; k < this.getColumn(); k++) sum += this.getEntry(a, k) * matrix.getEntry(k, b);
                 result.setEntry(a, b, sum);
             }
-        }
         return result;
     }
 
     public Matrix transpose() {
         Matrix result = new Matrix(this.getColumn(), this.getRow());
-        for (int a = 0; a < result.getRow(); a++) {
-            for (int b = 0; b < result.getColumn(); b++) {
+        for (int a = 0; a < result.getRow(); a++)
+            for (int b = 0; b < result.getColumn(); b++)
                 result.setEntry(a, b, this.getEntry(b, a));
-            }
-        }
         return result;
     }
 
     public void randomize() {
-        for (int a = 0; a < this.getRow(); a++) {
-            for (int b = 0; b < this.getColumn(); b++) {
-                this.setEntry(a, b, (double) Math.random() * 2 - 1);
-            }
-        }
+        for (int a = 0; a < this.getRow(); a++)
+            for (int b = 0; b < this.getColumn(); b++)
+                this.setEntry(a, b, Math.random() * 2 - 1);
     }
 
     public double[][] getData() {
@@ -83,13 +77,11 @@ public class Matrix {
         return matrix1.matrixMapping(matrix2, (int r, int c, double value) -> matrix1.getEntry(r, c) * value);
     }
 
-    private Matrix matrixMapping(Matrix matrix, MapAble function) {
-        if (this.getRow() != matrix.getRow() || this.getColumn() != matrix.getColumn())
-            throw new RuntimeException("Mismatch size matrix to add.");
-        Matrix result = new Matrix(this.getRow(), this.getColumn());
-        for (int a = 0; a < this.getRow(); a++) {
-            for (int b = 0; b < this.getColumn(); b++) {
-                double value = function.map(a, b, this.getEntry(a, b));
+    public static Matrix matrixMapping(Matrix matrix, MapAble function) {
+        Matrix result = new Matrix(matrix.getRow(), matrix.getColumn());
+        for (int a = 0; a < matrix.getRow(); a++) {
+            for (int b = 0; b < matrix.getColumn(); b++) {
+                double value = function.map(a, b, matrix.getEntry(a, b));
                 result.setEntry(a, b, value);
             }
         }
@@ -129,8 +121,7 @@ public class Matrix {
         stringBuilder.append("Matrix rows: ").append(this.getRow()).append(" columns: ").append(this.getColumn()).append("\n");
         for (int a = 0; a < this.row; a++) {
             for (int b = 0; b < this.column; b++) {
-                stringBuilder.append(this.getEntry(a, b))
-                        .append("  ");
+                stringBuilder.append(this.getEntry(a, b)).append("  ");
             }
             stringBuilder.append("\n");
         }

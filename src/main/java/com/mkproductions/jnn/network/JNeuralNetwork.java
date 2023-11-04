@@ -1,9 +1,6 @@
 package com.mkproductions.jnn.network;
 
-import com.mkproductions.jnn.entity.ActivationFunction;
-import com.mkproductions.jnn.entity.Mapper;
-import com.mkproductions.jnn.entity.Layer;
-import com.mkproductions.jnn.entity.Matrix;
+import com.mkproductions.jnn.entity.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -18,6 +15,16 @@ public class JNeuralNetwork implements Serializable {
     private final Matrix[] outputDeltaMatrices;
     private final Matrix[] outputGradientMatrices;
     private double learningRate;
+
+    // Activation functions for the neural network.
+    public static MapAble SIGMOID_ACTIVATION = (a, b, x) -> 1.0 / (1 + Math.exp(-x));
+    public static MapAble TANH_ACTIVATION = (a, b, x) -> (Math.exp(x) - Math.exp(-x)) / (Math.exp(x) + Math.exp(-x));
+    public static MapAble RELU_ACTIVATION = (a, b, x) -> Math.max(0, x);
+
+    // TODO: Implement the function to calculate the derivative of the activation functions.
+    public static MapAble sigmoidDerivative = (a, b, y) -> y * (1 - y);
+    public static MapAble TanhDerivative = (a, b, y) -> 1 - (y * y);
+    public static MapAble ReLuDerivative = (a, b, y) -> (y < 0) ? 0 : 1;
 
     public JNeuralNetwork(int numberOfInputNode, Layer... layers) {
         // Storing the design of the Neural Network
@@ -59,12 +66,12 @@ public class JNeuralNetwork implements Serializable {
             if (a == 0) {
                 Matrix weightedInput = this.weightsMatrices[a].multiply(inputMatrix);
                 weightedInput.add(this.biasesMatrices[a]);
-                outputMatrices[a] = applyActivationToMatrix(weightedInput, this.hiddenNodeSchema[a].activationFunction());
+                outputMatrices[a] = Matrix.matrixMapping(weightedInput, this.hiddenNodeSchema[a].activationFunction());
                 continue;
             }
             Matrix weightedInput = this.weightsMatrices[a].multiply(this.outputMatrices[a - 1]);
             weightedInput.add(this.biasesMatrices[a]);
-            outputMatrices[a] = applyActivationToMatrix(weightedInput, this.hiddenNodeSchema[a].activationFunction());
+            outputMatrices[a] = Matrix.matrixMapping(weightedInput, this.hiddenNodeSchema[a].activationFunction());
         }
         return outputMatrices[this.outputMatrices.length - 1].transpose().getRow(0);
     }
@@ -93,10 +100,10 @@ public class JNeuralNetwork implements Serializable {
             // Calculating gradient.
             // Calculating partial derivative here.
             Matrix gradientMatrix;
-//            if (layerIndex == this.outputMatrices.length - 1)
-//                gradientMatrix = outputError;
-//            else
-                gradientMatrix = deactivateOutput(outputMatrix, this.hiddenNodeSchema[layerIndex].activationFunction());
+            if (layerIndex == this.outputMatrices.length - 1)
+                gradientMatrix = outputError;
+            else
+                gradientMatrix = Matrix.matrixMapping(outputMatrix, this.hiddenNodeSchema[layerIndex].activationFunction());
 
             gradientMatrix = Matrix.elementWiseMultiply(outputError, gradientMatrix);
             gradientMatrix = gradientMatrix.scalarMultiply(this.learningRate);
@@ -123,10 +130,9 @@ public class JNeuralNetwork implements Serializable {
      * @param trainingInputs 2D array of inputs to be learned by network.
      * @param targetOutputs  2D array to train the network as per the random input index.
      */
-    public void train(double[][] trainingInputs, double[][] targetOutputs, int epochs) throws Exception {
+    public void train(double[][] trainingInputs, double[][] targetOutputs, int epochs) {
         if (trainingInputs[0].length != this.numberOfInputNode || targetOutputs[0].length != this.hiddenNodeSchema[this.hiddenNodeSchema.length - 1].numberOfNodes())
             throw new RuntimeException("Mismatch inputs or outputs size.");
-//        int lastProgress = 0;
         for (int a = 0; a < epochs; a++) {
             int randomIndex = new Random().nextInt(0, trainingInputs.length);
             double[] inputs = trainingInputs[randomIndex];
@@ -148,24 +154,6 @@ public class JNeuralNetwork implements Serializable {
         }
         double n = 1.0 / outputs.length;
         return cost * n;
-    }
-
-    private Matrix applyActivationToMatrix(Matrix matrix, ActivationFunction activationFunction) {
-        Matrix newMatrix = new Matrix(matrix.getRow(), matrix.getColumn());
-        for (int a = 0; a < matrix.getRow(); a++)
-            for (int b = 0; b < matrix.getColumn(); b++)
-                newMatrix.setEntry(a, b, Mapper.mapActivation(activationFunction, matrix.getEntry(a, b)));
-        return newMatrix;
-    }
-
-    private Matrix deactivateOutput(Matrix matrix, ActivationFunction activationFunction) {
-        Matrix newMatrix = new Matrix(matrix.getData());
-        for (int a = 0; a < newMatrix.getRow(); a++)
-            for (int b = 0; b < newMatrix.getColumn(); b++) {
-                double derivative = Mapper.mapDeactivation(activationFunction, matrix.getEntry(a, b));
-                newMatrix.setEntry(a, b, derivative);
-            }
-        return newMatrix;
     }
 
     public double getLearningRate() {
