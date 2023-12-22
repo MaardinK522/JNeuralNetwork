@@ -9,13 +9,14 @@ public class Mapper {
         return toMin + (value - fromMin) * (toMax - toMin) / (fromMax - fromMin);
     }
 
-    public static double mapPredictionToRange(double prediction, MapAble activationFunction, int fromValue, int toValue) {
-        double output = 0;
-        if (activationFunction.equals(JNeuralNetwork.SIGMOID_ACTIVATION)) output = prediction * toValue;
-        if (activationFunction.equals(JNeuralNetwork.TANH_ACTIVATION))
-            output = mapRangeToRange(prediction, -1, 1, fromValue, toValue);
-        if (activationFunction.equals(JNeuralNetwork.RELU_ACTIVATION)) output = (prediction < 0) ? 0 : 1;
-        return output;
+    public static double mapPredictionToRange(double prediction, ActivationFunction activationFunction, int fromValue, int toValue) {
+        if (activationFunction.name().equals(ActivationFunction.SIGMOID.name()))
+            return prediction * toValue;
+        if (activationFunction.name().equals(ActivationFunction.TAN_H.name()))
+            return mapRangeToRange(prediction, -1, 1, fromValue, toValue);
+        if (activationFunction.name().equals(ActivationFunction.RE_LU.name()))
+            return (prediction < 0) ? 0 : toValue;
+        return 0;
     }
 }
 

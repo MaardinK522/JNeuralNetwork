@@ -4,47 +4,33 @@ import com.mkproductions.jnn.entity.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.sql.SQLOutput;
+import java.util.Arrays;
 import java.util.Random;
 
 public class JNeuralNetwork implements Serializable {
     private final int numberOfInputNode;
-    private final Layer[] hiddenNodeSchema;
+    private final Layer[] netWorkLayers;
     private final Matrix[] weightsMatrices;
     private final Matrix[] biasesMatrices;
-    private final Matrix[] outputMatrices;
-    private final Matrix[] outputDeltaMatrices;
-    private final Matrix[] outputGradientMatrices;
     private double learningRate;
 
-    // Activation functions for the neural network.
-    public static MapAble SIGMOID_ACTIVATION = (a, b, x) -> 1.0 / (1 + Math.exp(-x));
-    public static MapAble TANH_ACTIVATION = (a, b, x) -> (Math.exp(x) - Math.exp(-x)) / (Math.exp(x) + Math.exp(-x));
-    public static MapAble RELU_ACTIVATION = (a, b, x) -> Math.max(0, x);
-
-    // TODO: Implement the function to calculate the derivative of the activation functions.
-    public static MapAble sigmoidDerivative = (a, b, y) -> y * (1 - y);
-    public static MapAble TanhDerivative = (a, b, y) -> 1 - (y * y);
-    public static MapAble ReLuDerivative = (a, b, y) -> (y < 0) ? 0 : 1;
-
-    public JNeuralNetwork(int numberOfInputNode, Layer... layers) {
+    public JNeuralNetwork(int numberOfInputNode, Layer... netWorkLayers) {
         // Storing the design of the Neural Network
         this.learningRate = 0.01;
         this.numberOfInputNode = numberOfInputNode;
-        this.hiddenNodeSchema = layers;
+        this.netWorkLayers = netWorkLayers;
         // Initializing the arrays
-        this.weightsMatrices = new Matrix[layers.length];
-        this.biasesMatrices = new Matrix[layers.length];
-        this.outputMatrices = new Matrix[layers.length];
-        this.outputDeltaMatrices = new Matrix[layers.length];
-        this.outputGradientMatrices = new Matrix[layers.length];
+        this.weightsMatrices = new Matrix[netWorkLayers.length];
+        this.biasesMatrices = new Matrix[netWorkLayers.length];
         // Assign weights and biases to matrix arrays
         for (int a = 0; a < this.weightsMatrices.length; a++) {
             if (a == 0) {
-                this.weightsMatrices[a] = new Matrix(this.hiddenNodeSchema[a].numberOfNodes(), this.numberOfInputNode);
+                this.weightsMatrices[a] = new Matrix(this.netWorkLayers[a].numberOfNodes(), this.numberOfInputNode);
             } else {
-                this.weightsMatrices[a] = new Matrix(this.hiddenNodeSchema[a].numberOfNodes(), this.hiddenNodeSchema[a - 1].numberOfNodes());
+                this.weightsMatrices[a] = new Matrix(this.netWorkLayers[a].numberOfNodes(), this.netWorkLayers[a - 1].numberOfNodes());
             }
-            this.biasesMatrices[a] = new Matrix(this.hiddenNodeSchema[a].numberOfNodes(), 1);
+            this.biasesMatrices[a] = new Matrix(this.netWorkLayers[a].numberOfNodes(), 1);
             // Randomizing the weights and bias
             this.weightsMatrices[a].randomize();
             this.biasesMatrices[a].randomize();
@@ -60,20 +46,21 @@ public class JNeuralNetwork implements Serializable {
     public double[] processInputs(double @NotNull [] inputs) {
         if (inputs.length != this.numberOfInputNode)
             throw new RuntimeException("Mismatch length of inputs to the network.");
+        Matrix inputMatrix = Matrix.fromArray(inputs).transpose();
 
-        Matrix inputMatrix = Matrix.fromArray(inputs);
+        Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
         for (int a = 0; a < this.weightsMatrices.length; a++) {
             if (a == 0) {
-                Matrix weightedInput = this.weightsMatrices[a].multiply(inputMatrix);
+                Matrix weightedInput = Matrix.matrixMultiplication(this.weightsMatrices[a], inputMatrix);
                 weightedInput.add(this.biasesMatrices[a]);
-                outputMatrices[a] = Matrix.matrixMapping(weightedInput, this.hiddenNodeSchema[a].activationFunction());
+                outputMatrices[a] = Matrix.matrixMapping(weightedInput, this.netWorkLayers[a].activationFunction().equation);
                 continue;
             }
-            Matrix weightedInput = this.weightsMatrices[a].multiply(this.outputMatrices[a - 1]);
+            Matrix weightedInput = Matrix.matrixMultiplication(this.weightsMatrices[a], outputMatrices[a - 1]);
             weightedInput.add(this.biasesMatrices[a]);
-            outputMatrices[a] = Matrix.matrixMapping(weightedInput, this.hiddenNodeSchema[a].activationFunction());
+            outputMatrices[a] = Matrix.matrixMapping(weightedInput, this.netWorkLayers[a].activationFunction().equation);
         }
-        return outputMatrices[this.outputMatrices.length - 1].transpose().getRow(0);
+        return outputMatrices[outputMatrices.length - 1].transpose().getRowCount(0);
     }
 
     /**
@@ -86,39 +73,43 @@ public class JNeuralNetwork implements Serializable {
     private void backPropagate(double[] input, double[] target) {
         if (input.length != this.numberOfInputNode)
             throw new RuntimeException("Mismatch length of inputs to the network.");
-        Matrix targetMatrix = new Matrix(new double[][]{target}).transpose();
-        Matrix outputError = this.outputMatrices[this.outputMatrices.length - 1].subtract(targetMatrix).scalarMultiply(2);
-        for (int layerIndex = this.hiddenNodeSchema.length - 1; layerIndex >= 0; layerIndex--) {
-            // Getting the inputs of the current layer.
-            Matrix previousOutputMatrix;
-            if (layerIndex == 0) previousOutputMatrix = new Matrix(new double[][]{input}).transpose();
-            else previousOutputMatrix = this.outputMatrices[layerIndex - 1];
+        Matrix inputMatrix = Matrix.fromArray(input).transpose();
 
-            // Getting the output of the layer.
-            Matrix outputMatrix = this.outputMatrices[layerIndex];
+        Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
+        for (int a = 0; a < this.weightsMatrices.length; a++) {
+            Matrix weightedInput;
+            if (a == 0) weightedInput = Matrix.matrixMultiplication(this.weightsMatrices[a], inputMatrix);
+            else weightedInput = Matrix.matrixMultiplication(this.weightsMatrices[a], outputMatrices[a - 1]);
 
-            // Calculating gradient.
-            // Calculating partial derivative here.
-            Matrix gradientMatrix;
-            if (layerIndex == this.outputMatrices.length - 1)
-                gradientMatrix = outputError;
-            else
-                gradientMatrix = Matrix.matrixMapping(outputMatrix, this.hiddenNodeSchema[layerIndex].activationFunction());
+            weightedInput.add(this.biasesMatrices[a]);
 
-            gradientMatrix = Matrix.elementWiseMultiply(outputError, gradientMatrix);
-            gradientMatrix = gradientMatrix.scalarMultiply(this.learningRate);
-
-            // Calculating deltas
-            this.outputDeltaMatrices[layerIndex] = gradientMatrix.multiply(previousOutputMatrix.transpose());
-
-            Matrix weightTranspose = this.weightsMatrices[layerIndex].transpose();
-            outputError = weightTranspose.multiply(outputError);
-            this.outputGradientMatrices[layerIndex] = gradientMatrix;
+            outputMatrices[a] = Matrix.matrixMapping(weightedInput, this.netWorkLayers[a].activationFunction().equation);
         }
 
-        for (int a = 0; a < this.outputGradientMatrices.length; a++) {
-            this.weightsMatrices[a] = this.weightsMatrices[a].add(outputDeltaMatrices[a]);
-            this.biasesMatrices[a] = this.biasesMatrices[a].add(outputGradientMatrices[a]);
+        Matrix outputMatrix = outputMatrices[outputMatrices.length - 1];
+
+        Matrix targetMatrix = new Matrix(new double[][]{target}).transpose();
+
+        // Output error matrix.
+        Matrix errorMatrix = Matrix.scalarMultiply(Matrix.subtract(outputMatrix, targetMatrix), -1);
+
+        for (int layerIndex = this.netWorkLayers.length - 1; layerIndex >= 0; layerIndex--) {
+
+            // Calculating gradients
+            Matrix gradientMatrix = Matrix.matrixMapping(outputMatrices[layerIndex], this.netWorkLayers[layerIndex].activationFunction().derivative);
+            gradientMatrix.elementWiseMultiply(errorMatrix);
+            gradientMatrix.scalarMultiply(-this.learningRate);
+            
+            errorMatrix = Matrix.matrixMultiplication(this.weightsMatrices[layerIndex].transpose(), errorMatrix);
+
+            // Getting the inputs of the current layer.
+            Matrix previousOutputMatrixTranspose;
+            if (layerIndex == 0) previousOutputMatrixTranspose = inputMatrix.transpose();
+            else previousOutputMatrixTranspose = outputMatrices[layerIndex - 1].transpose();
+            Matrix deltaWeightsMatrix = Matrix.matrixMultiplication(gradientMatrix, previousOutputMatrixTranspose);
+
+            this.weightsMatrices[layerIndex].subtract(deltaWeightsMatrix);
+            this.biasesMatrices[layerIndex].subtract(gradientMatrix);
         }
     }
 
@@ -131,29 +122,16 @@ public class JNeuralNetwork implements Serializable {
      * @param targetOutputs  2D array to train the network as per the random input index.
      */
     public void train(double[][] trainingInputs, double[][] targetOutputs, int epochs) {
-        if (trainingInputs[0].length != this.numberOfInputNode || targetOutputs[0].length != this.hiddenNodeSchema[this.hiddenNodeSchema.length - 1].numberOfNodes())
+        if (trainingInputs[0].length != this.numberOfInputNode || targetOutputs[0].length != this.netWorkLayers[this.netWorkLayers.length - 1].numberOfNodes())
             throw new RuntimeException("Mismatch inputs or outputs size.");
         for (int a = 0; a < epochs; a++) {
             int randomIndex = new Random().nextInt(0, trainingInputs.length);
-            double[] inputs = trainingInputs[randomIndex];
+            double[] training_input = trainingInputs[randomIndex];
             double[] targets = targetOutputs[randomIndex];
-            double[] outputs = processInputs(inputs);
-
-            backPropagate(inputs, targets);
-
-            double networkCost = networkCost(outputs, targets);
-            System.out.println("Cost of the network: " + networkCost);
+            System.out.println("Training input: " + Arrays.toString(training_input));
+            System.out.println("Training output: " + Arrays.toString(targets));
+            backPropagate(training_input, targets);
         }
-    }
-
-    private double networkCost(double[] outputs, double[] targets) {
-        double cost = 0;
-        for (int a = 0; a < outputs.length; a++) {
-            double diff = targets[a] - outputs[a];
-            cost += diff * diff;
-        }
-        double n = 1.0 / outputs.length;
-        return cost * n;
     }
 
     public double getLearningRate() {
@@ -164,35 +142,3 @@ public class JNeuralNetwork implements Serializable {
         this.learningRate = learningRate;
     }
 }
-
-//    private void printRealMatrix(Matrix matrix) {
-//        System.out.println("Matrix(rows: " + matrix.getRow() + ",cols: " + matrix.getColumn() + ")");
-//        StringBuilder stringBuilder = new StringBuilder();
-//        stringBuilder.append("{\n");
-//        for (int a = 0; a < matrix.getRow(); a++) {
-//            stringBuilder.append("\t");
-//            for (int b = 0; b < matrix.getColumn(); b++) {
-//                stringBuilder.append(matrix.getEntry(a, b)).append(" ");
-//            }
-//            stringBuilder.append("\n");
-//        }
-//        stringBuilder.append("}\n");
-//        System.out.println(stringBuilder);
-//    }
-//
-//    public void printNetwork() {
-//        ArrayList<Integer> schema = new ArrayList<>();
-//        schema.add(this.numberOfInputNode);
-//        for (var i : this.hiddenNodeSchema) {
-//            schema.add(i.numberOfNodes());
-//        }
-//        System.out.println(schema);
-//    }
-//
-//    public void saveModel(String fileName) throws IOException {
-//        new ObjectOutputStream(new FileOutputStream(fileName)).writeObject(this);
-//    }
-//
-//    public static JNeuralNetwork loadModel(String filePath) throws Exception {
-//        return (JNeuralNetwork) new ObjectInputStream(new FileInputStream(filePath)).readObject();
-//    }
