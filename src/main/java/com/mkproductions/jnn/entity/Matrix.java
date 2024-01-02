@@ -173,13 +173,18 @@ public class Matrix {
 
     public void printMatrix() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("Matrix rows: ").append(this.getRowCount()).append(" columns: ").append(this.getColumnCount()).append("\n");
+        stringBuilder.append("\n");
         for (int a = 0; a < this.getRowCount(); a++) {
+            stringBuilder.append("[");
             for (int b = 0; b < this.getColumnCount(); b++) {
-                stringBuilder.append(this.getEntry(a, b)).append("  ");
+                stringBuilder.append(this.getEntry(a, b));
+                if (b != this.getColumnCount() - 1)
+                    stringBuilder.append(", ");
             }
+            stringBuilder.append("]");
             stringBuilder.append("\n");
         }
+        stringBuilder.append("Matrix rows: ").append(this.getRowCount()).append(" columns: ").append(this.getColumnCount());
         System.out.println(stringBuilder);
     }
 }

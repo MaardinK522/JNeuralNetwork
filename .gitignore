@@ -35,4 +35,4 @@ build/
 .vscode/
 
 ### Mac OS ###
-.DS_Store
+.DS_Storesrc/main/resources/com/mkproductions/training_data/mnist_train.csv
