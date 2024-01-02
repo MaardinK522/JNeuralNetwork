@@ -15,7 +15,6 @@ public class MNISTFrame extends JFrame {
     public static double[][] dataGrid = new double[28][28];
     int w = 560;
     int h = 560;
-
     private final MNISTTestingJPanel mnistTestingJPanel;
     private final MNISTNetworkJPanel mnistNetworkJPanel;
     private boolean running = false;
@@ -136,7 +135,7 @@ public class MNISTFrame extends JFrame {
         // Converting training outputs into raw arrays.
         for (int a = 0; a < trainingOutputs.length; a++) {
             int trainingOutputIndex = csvTrainingOutputColumn.get(a).intValue();
-            trainingOutputs[a][trainingOutputIndex] = 1;
+            trainingOutputs[a][trainingOutputIndex] = 0.9;
         }
 
         // For filtering testing data.
@@ -149,7 +148,7 @@ public class MNISTFrame extends JFrame {
         // Converting testing outputs into raw outputs.
         for (int a = 0; a < testingOutputs.length; a++) {
             int testingOutputIndex = csvTestingOutputColumn.get(a).intValue();
-            testingOutputs[a][testingOutputIndex] = 1;
+            testingOutputs[a][testingOutputIndex] = 0.9;
         }
         System.out.println("Thanks for waiting!!!");
         return new double[][][]{
