@@ -26,8 +26,6 @@ public class MNISTFrame extends JFrame {
     public static JNeuralNetwork jNeuralNetwork;
     private final Layer[] networkLayers;
     private final int epochs = 100;
-    private int mouseX = 0;
-    private int mouseY = 0;
 
     public MNISTFrame(String frameName) {
         // Initializing network
@@ -79,23 +77,12 @@ public class MNISTFrame extends JFrame {
                 System.out.println(frameName + " has ended.");
             }
         });
-        addMouseMotionListener(
-                new MouseMotionAdapter() {
-                    @Override
-                    public void mouseDragged(MouseEvent e) {
-                        super.mouseDragged(e);
-                        mouseX = e.getX();
-                        mouseY = e.getY();
-                    }
-                }
-        );
         setLayout(new GridLayout(1, 2));
         setTitle(frameName);
         setSize(this.w, this.h);
         setLocationRelativeTo(null);
         setVisible(true);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-//        jNeuralNetwork.train(trainingInputs, trainingOutputs, this.epochs * 2);
     }
 
     private void restartNetwork() {
