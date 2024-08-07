@@ -5,7 +5,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
 
-import static com.mkproductions.jnn.graphics.mnist.MNISTFrame.dataGrid;
 
 public class MNISTTestingJPanel extends JPanel {
     public int mouseX;
@@ -13,7 +12,6 @@ public class MNISTTestingJPanel extends JPanel {
     private boolean mousePressed = false;
 
     MNISTTestingJPanel(int w, int h) {
-        // Configuring the components.
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -56,13 +54,14 @@ public class MNISTTestingJPanel extends JPanel {
         int cellDeltaX = getWidth() / cellCount;
         int cellDeltaY = getHeight() / cellCount;
         int x = 0;
+        double[][] dataGrid = MNISTFrame.getDataGrid();
         for (int a = 0; a < dataGrid.length; a++) {
             int y = 0;
             for (int b = 0; b < dataGrid[0].length; b++) {
-                if (mousePressed)
-                    if (this.mouseX >= a * cellDeltaX && this.mouseX <= (a * cellDeltaX) + cellDeltaX)
-                        if (this.mouseY >= b * cellDeltaY && this.mouseY <= (b * cellDeltaY) + cellDeltaY)
-                            dataGrid[a][b] = 255;
+                if (mousePressed) if (this.mouseX >= a * cellDeltaX && this.mouseX <= (a * cellDeltaX) + cellDeltaX)
+                    if (this.mouseY >= b * cellDeltaY && this.mouseY <= (b * cellDeltaY) + cellDeltaY)
+                        dataGrid[a][b] = 255;
+
                 int color = (int) dataGrid[a][b];
                 g.setColor(new Color(color, color, color));
                 g.fillRect(x, y, cellDeltaX, cellDeltaY);
@@ -74,5 +73,6 @@ public class MNISTTestingJPanel extends JPanel {
         g.setColor(Color.white);
         g.drawString("FPS: " + fps, 10, 20);
         g.drawString("Mouse pressed: " + mousePressed, 10, 35);
+        g.drawString("Network accuracy: " + MNISTFrame.networkAccuracy + "%", 10, 50);
     }
 }

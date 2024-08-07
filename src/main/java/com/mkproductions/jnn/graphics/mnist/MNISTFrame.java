@@ -12,7 +12,8 @@ import java.awt.event.*;
 import java.util.List;
 
 public class MNISTFrame extends JFrame {
-    public static double[][] dataGrid = new double[28][28];
+    private static final double[][] dataGrid = new double[28][28];
+    public static double networkAccuracy;
     int w = 560;
     int h = 560;
     private final MNISTTestingJPanel mnistTestingJPanel;
@@ -20,30 +21,31 @@ public class MNISTFrame extends JFrame {
     private boolean running = false;
     private final double[][] trainingInputs;
     private final double[][] trainingOutputs;
-    private final double[][] testingInputs;
-    private final double[][] testingOutputs;
-    public static JNeuralNetwork jNeuralNetwork;
-    private final Layer[] networkLayers;
-    private final int epochs = 100;
+    public static double[][] testingInputs;
+    public static double[][] testingOutputs;
+    private static JNeuralNetwork jNeuralNetwork;
+    public static Layer[] networkLayers;
 
     public MNISTFrame(String frameName) {
         // Initializing network
-        this.networkLayers = new Layer[]{
-                new Layer(10, ActivationFunction.SIGMOID),
+        networkLayers = new Layer[]{
+                new Layer(128, ActivationFunction.RE_LU),
+                new Layer(64, ActivationFunction.RE_LU),
                 new Layer(10, ActivationFunction.SIGMOID),
         };
         jNeuralNetwork = new JNeuralNetwork(784, networkLayers);
-        jNeuralNetwork.setLearningRate(0.01);
+        jNeuralNetwork.setLearningRate(0.0001);
 
         // Declaring size of the inputs & outputs.
         double[][][] trainingTestingData = this.prepareTrainingTestingDataSet();
         this.trainingInputs = trainingTestingData[0];
         this.trainingOutputs = trainingTestingData[1];
-        this.testingInputs = trainingTestingData[2];
-        this.testingOutputs = trainingTestingData[3];
+        testingInputs = trainingTestingData[2];
+        testingOutputs = trainingTestingData[3];
 
         this.mnistTestingJPanel = new MNISTTestingJPanel(this.w / 2, this.h);
         this.mnistNetworkJPanel = new MNISTNetworkJPanel(this.w / 2, this.h);
+
 
         add(this.mnistNetworkJPanel, BorderLayout.EAST);
         add(this.mnistTestingJPanel, BorderLayout.WEST);
@@ -84,10 +86,18 @@ public class MNISTFrame extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
 
+    public static double[] processNetworkInputs(double[] inputs) {
+        return jNeuralNetwork.processInputs(inputs);
+    }
+
+    public static double[][] getDataGrid() {
+        return dataGrid;
+    }
+
     private void restartNetwork() {
         jNeuralNetwork = new JNeuralNetwork(
                 784,
-                this.networkLayers
+                networkLayers
         );
         jNeuralNetwork.setLearningRate(0.0001);
     }
@@ -104,6 +114,7 @@ public class MNISTFrame extends JFrame {
             }
         }
         dispose();
+        System.exit(-200);
     }
 
     private double[][][] prepareTrainingTestingDataSet() {
@@ -134,8 +145,7 @@ public class MNISTFrame extends JFrame {
         }
         // Converting training outputs into raw arrays.
         for (int a = 0; a < trainingOutputs.length; a++) {
-            int trainingOutputIndex = csvTrainingOutputColumn.get(a).intValue();
-            trainingOutputs[a][trainingOutputIndex] = 0.9;
+            trainingOutputs[a][csvTrainingOutputColumn.get(a).intValue()] = 1;
         }
 
         // For filtering testing data.
@@ -147,9 +157,9 @@ public class MNISTFrame extends JFrame {
 
         // Converting testing outputs into raw outputs.
         for (int a = 0; a < testingOutputs.length; a++) {
-            int testingOutputIndex = csvTestingOutputColumn.get(a).intValue();
-            testingOutputs[a][testingOutputIndex] = 0.9;
+            testingOutputs[a][csvTestingOutputColumn.get(a).intValue()] = 1;
         }
+
         System.out.println("Thanks for waiting!!!");
         return new double[][][]{
                 trainingInputs,
@@ -160,7 +170,14 @@ public class MNISTFrame extends JFrame {
     }
 
     void triggerNetworkTraining() {
-        MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, this.epochs);
+        int trainingCount = 0;
+        while (networkAccuracy < 10) {
+            trainingCount++;
+            int epochs = 10000;
+            MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
+            networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(MNISTFrame.testingInputs, MNISTFrame.testingOutputs);
+            System.out.println("Training count: " + trainingCount);
+        }
     }
 
     public void clearGridData() {

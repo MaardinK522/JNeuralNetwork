@@ -24,14 +24,14 @@ public class XORWindowPanel extends JPanel {
     private final double[][] trainingOutputs = {
             {0},
             {1},
-            {1},
-            {0}
+            {0},
+            {1}
     };
     private int cellSize = 10;
 
     public XORWindowPanel(int width, int height) {
         this.networkLayers = new Layer[]{
-                new Layer(4, ActivationFunction.SIGMOID),
+                new Layer(10, ActivationFunction.SIGMOID),
                 new Layer(1, ActivationFunction.SIGMOID),
         };
         this.jNeuralNetwork = new JNeuralNetwork(2, this.networkLayers);
@@ -50,12 +50,12 @@ public class XORWindowPanel extends JPanel {
                 for (double y = 0; y < getHeight(); y += this.cellSize) {
                     double[] inputs = {x / getWidth(), y / getHeight()};
                     double prediction = this.jNeuralNetwork.processInputs(inputs)[0];
-                    int output = (int) Mapper.mapPredictionToRange(prediction, this.networkLayers[this.networkLayers.length - 1].activationFunction(), 0, 255);
+                    int output = (int) Mapper.mapRangeToRange(prediction, 0, 1, 0, 255);
                     g.setColor(new Color(output, output, output));
                     g.fillRect((int) x, (int) y, this.cellSize, this.cellSize);
                 }
             }
-            int epochs = 10;
+            int epochs = 1000;
             this.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
         } catch (Exception e) {
             throw new RuntimeException(e);

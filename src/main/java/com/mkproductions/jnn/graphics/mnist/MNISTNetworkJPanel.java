@@ -1,13 +1,11 @@
 package com.mkproductions.jnn.graphics.mnist;
 
-import com.mkproductions.jnn.entity.ActivationFunction;
 import com.mkproductions.jnn.entity.Mapper;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.Arrays;
 
-import static com.mkproductions.jnn.graphics.mnist.MNISTFrame.dataGrid;
 
 public class MNISTNetworkJPanel extends JPanel {
     private double[] prediction = new double[10];
@@ -24,8 +22,9 @@ public class MNISTNetworkJPanel extends JPanel {
         int gap = 20;
         int x = 10;
         int y = 20;
-        for (int a = 0; a < this.prediction.length; a++) {
-            int color = (int) (this.prediction[a] * 255);
+        for (int a = 0; a < 10; a++) {
+            int prediction = (int) Mapper.mapRangeToRange(this.prediction[a], -1, 1, 0, 255);
+            int color = Math.min(prediction, 255);
             g.setColor(new Color(color, color, color));
             g.fillRect(x, y, 50, 50);
             g.setColor(Color.white);
@@ -40,15 +39,16 @@ public class MNISTNetworkJPanel extends JPanel {
     }
 
     public void triggerNetworkPrediction() {
+        double[][] dataGrid = MNISTFrame.getDataGrid();
         double[] trainingInput = new double[dataGrid.length * dataGrid[0].length];
         int index = 0;
         for (double[] doubles : dataGrid) {
-            for (int b = 0; b < dataGrid[0].length; b++) {
-                double data = doubles[b];
+            for (double aDouble : doubles) {
+                double data = Mapper.mapRangeToRange(aDouble, 0, 255, 0, 1);
                 trainingInput[index++] = data;
             }
         }
-        this.prediction = MNISTFrame.jNeuralNetwork.processInputs(trainingInput);
+        this.prediction = MNISTFrame.processNetworkInputs(trainingInput);
         System.out.println("Prediction: " + Arrays.toString(this.prediction));
     }
 }

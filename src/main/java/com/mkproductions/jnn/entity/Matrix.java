@@ -1,9 +1,9 @@
 package com.mkproductions.jnn.entity;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Matrix {
-
     private final double[][] data;
 
     public Matrix(int row, int column) {
@@ -23,6 +23,18 @@ public class Matrix {
         return new Matrix(new double[][]{inputs});
     }
 
+    public static double[] toFlatArray(Matrix matrix) {
+        double[] flatArray = new double[matrix.getRowCount() * matrix.getColumnCount()];
+        int i = 0;
+        for (int a = 0; a < matrix.getRowCount(); a++) {
+            for (int b = 0; b < matrix.getColumnCount(); b++) {
+                flatArray[i] = matrix.getEntry(a, b);
+                i++;
+            }
+        }
+        return flatArray;
+    }
+
     public static Matrix matrixMultiplication(Matrix matrix1, Matrix matrix2) {
         if (matrix1.getColumnCount() != matrix2.getRowCount())
             throw new RuntimeException("Matrix multiplication not possible.\n Cause " + matrix1.getColumnCount() + " != " + matrix2.getRowCount());
@@ -37,6 +49,28 @@ public class Matrix {
         return result;
     }
 
+    public static Matrix convolute(Matrix image, Matrix filter) {
+        // Calculating the output shape.
+        int resultRowCount = image.getRowCount() - filter.getRowCount() + 1;
+        int resultColumnCount = image.getColumnCount() - filter.getColumnCount() + 1;
+
+        // Creating an empty result of the convolution.
+        Matrix resultMatrix = new Matrix(resultRowCount, resultColumnCount);
+
+        for (int a = 0; a < resultMatrix.getRowCount(); a++) {
+            for (int b = 0; b < resultMatrix.getColumnCount(); b++) {
+                double sum = 0;
+                for (int c = 0; c < filter.getRowCount(); c++) {
+                    for (int d = 0; d < filter.getColumnCount(); d++) {
+                        sum += image.getEntry(a + c, b + d) * filter.getEntry(c, d);
+                    }
+                }
+                resultMatrix.setEntry(a, b, sum);
+            }
+        }
+        return resultMatrix;
+    }
+
     public Matrix transpose() {
         Matrix result = new Matrix(this.getColumnCount(), this.getRowCount());
         for (int a = 0; a < result.getRowCount(); a++)
@@ -49,7 +83,7 @@ public class Matrix {
         Random rand = new Random();
         for (int a = 0; a < this.getRowCount(); a++)
             for (int b = 0; b < this.getColumnCount(); b++)
-                this.setEntry(a, b, rand.nextGaussian());
+                this.setEntry(a, b, rand.nextDouble() * 2 - 1);
     }
 
     public double[][] getData() {
@@ -163,12 +197,20 @@ public class Matrix {
         return this.data[row];
     }
 
-    public double[] getColumnCount(int columnIndex) {
+    public double[] getColumn(int columnIndex) {
         double[] column = new double[this.getRowCount()];
         for (int a = 0; a < column.length; a++) {
             column[a] = this.getEntry(a, columnIndex);
         }
         return column;
+    }
+
+    public double[] getRow(int rowIndex) {
+        double[] row = new double[this.getRowCount()];
+        for (int a = 0; a < row.length; a++) {
+            row[a] = this.getEntry(rowIndex, a);
+        }
+        return row;
     }
 
     public void printMatrix() {
