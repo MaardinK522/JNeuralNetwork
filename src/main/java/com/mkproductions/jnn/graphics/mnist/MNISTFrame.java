@@ -1,9 +1,10 @@
 package com.mkproductions.jnn.graphics.mnist;
 
-import com.mkproductions.jnn.entity.ActivationFunction;
+import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.entity.CSVBufferedReader;
 import com.mkproductions.jnn.entity.Layer;
 import com.mkproductions.jnn.entity.Mapper;
+import com.mkproductions.jnn.entity.lossFunctions.ClassificationLossFunction;
 import com.mkproductions.jnn.network.JNeuralNetwork;
 
 import javax.swing.*;
@@ -30,11 +31,9 @@ public class MNISTFrame extends JFrame {
         // Initializing network
         networkLayers = new Layer[]{
                 new Layer(128, ActivationFunction.RE_LU),
-                new Layer(64, ActivationFunction.RE_LU),
                 new Layer(10, ActivationFunction.SIGMOID),
         };
-        jNeuralNetwork = new JNeuralNetwork(784, networkLayers);
-        jNeuralNetwork.setLearningRate(0.0001);
+        this.restartNetwork();
 
         // Declaring size of the inputs & outputs.
         double[][][] trainingTestingData = this.prepareTrainingTestingDataSet();
@@ -96,10 +95,11 @@ public class MNISTFrame extends JFrame {
 
     private void restartNetwork() {
         jNeuralNetwork = new JNeuralNetwork(
-                784,
+                ClassificationLossFunction.SPARSE_CATEGORICAL_CROSS_ENTROPY,
+                28 * 28,
                 networkLayers
         );
-        jNeuralNetwork.setLearningRate(0.0001);
+        jNeuralNetwork.setLearningRate(0.05);
     }
 
     public void startRendering() {
@@ -127,9 +127,9 @@ public class MNISTFrame extends JFrame {
         CSVBufferedReader csvTrainingDataBufferedReader = new CSVBufferedReader(trainingDataPath);
         CSVBufferedReader csvTestingDataBufferedReader = new CSVBufferedReader(testingDataPath);
 
-        java.util.List<java.util.List<Double>> csvTrainingDataTable = csvTrainingDataBufferedReader.getTable();
+        List<List<Double>> csvTrainingDataTable = csvTrainingDataBufferedReader.getTable();
         List<Double> csvTrainingOutputColumn = csvTrainingDataBufferedReader.getColumn("label");
-        java.util.List<java.util.List<Double>> csvTestingDataTable = csvTestingDataBufferedReader.getTable();
+        List<List<Double>> csvTestingDataTable = csvTestingDataBufferedReader.getTable();
         List<Double> csvTestingOutputColumn = csvTestingDataBufferedReader.getColumn("label");
 
         double[][] trainingInputs = new double[csvTrainingDataTable.size()][csvTrainingDataTable.get(0).size()];
@@ -141,25 +141,29 @@ public class MNISTFrame extends JFrame {
         for (int a = 0; a < csvTrainingDataTable.size(); a++) {
             for (int b = 0; b < csvTrainingDataTable.get(a).size(); b++) {
                 trainingInputs[a][b] = Mapper.mapRangeToRange(csvTrainingDataTable.get(a).get(b), 0, 255, 0, 1);
+                System.out.print('.');
             }
         }
+        System.out.println();
         // Converting training outputs into raw arrays.
         for (int a = 0; a < trainingOutputs.length; a++) {
             trainingOutputs[a][csvTrainingOutputColumn.get(a).intValue()] = 1;
+            System.out.print('.');
         }
-
+        System.out.println();
         // For filtering testing data.
         for (int a = 0; a < csvTestingDataTable.size(); a++) {
             for (int b = 0; b < csvTestingDataTable.get(a).size(); b++) {
                 testingInputs[a][b] = Mapper.mapRangeToRange(csvTestingDataTable.get(a).get(b), 0, 255, 0, 1);
+                System.out.print('.');
             }
         }
-
+        System.out.println();
         // Converting testing outputs into raw outputs.
         for (int a = 0; a < testingOutputs.length; a++) {
             testingOutputs[a][csvTestingOutputColumn.get(a).intValue()] = 1;
+            System.out.print('.');
         }
-
         System.out.println("Thanks for waiting!!!");
         return new double[][][]{
                 trainingInputs,
@@ -170,14 +174,9 @@ public class MNISTFrame extends JFrame {
     }
 
     void triggerNetworkTraining() {
-        int trainingCount = 0;
-        while (networkAccuracy < 10) {
-            trainingCount++;
-            int epochs = 10000;
-            MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
-            networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(MNISTFrame.testingInputs, MNISTFrame.testingOutputs);
-            System.out.println("Training count: " + trainingCount);
-        }
+        int epochs = 10;
+        MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
+        networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(MNISTFrame.testingInputs, MNISTFrame.testingOutputs);
     }
 
     public void clearGridData() {

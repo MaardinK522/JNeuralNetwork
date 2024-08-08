@@ -2,6 +2,9 @@ package com.mkproductions;
 
 
 import com.mkproductions.jnn.entity.*;
+import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
+import com.mkproductions.jnn.entity.lossFunctions.ClassificationLossFunction;
+import com.mkproductions.jnn.entity.lossFunctions.RegressionLossFunction;
 import com.mkproductions.jnn.graphics.mnist.MNISTFrame;
 import com.mkproductions.jnn.graphics.training_view.NeuralNetworkTrainingViewerJFrame;
 import com.mkproductions.jnn.graphics.xor.XORFrame;
@@ -12,55 +15,26 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Main {
-    private static final double[][] trainingInputs = {
-            {0, 0},
-            {0, 1},
-            {1, 0},
-            {1, 1}
-    };
-    private static final double[][] trainingOutputs = {
-            {0},
-            {1},
-            {0},
-            {1}
-    };
+    private static final double[][] trainingInputs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+    private static final double[][] trainingOutputs = {{0}, {1}, {0}, {1}};
 
     public static void main(String[] args) {
-        testingXORProblem();
+//        testingXORProblem();
 //        testingNetworkTraining();
-//        testingMNISTCSVTrainingTesting();
+        testingMNISTCSVTrainingTesting();
 //        testingCSVBufferedReader();
 //        performingConvolution();
 //        renderNetwork();
     }
 
     private static void renderNetwork() {
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(
-                2,
-                new Layer(4, ActivationFunction.SIGMOID),
-                new Layer(4, ActivationFunction.SIGMOID),
-                new Layer(1, ActivationFunction.SIGMOID)
-        );
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(RegressionLossFunction.SQUARED_ERROR, 2, new Layer(4, ActivationFunction.SIGMOID), new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.SIGMOID));
         new NeuralNetworkTrainingViewerJFrame(jNeuralNetwork, trainingInputs, trainingOutputs).startRendering();
     }
 
     private static void performingConvolution() {
-        double[][] imageData = new double[][]{
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 1, 1, 1},
-        };
-        double[][] filterData = new double[][]{
-                {-1, 0, 0.5},
-                {0, 0.1, 0},
-                {0.5, 0, -1},
-        };
+        double[][] imageData = new double[][]{{1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1, 1, 1},};
+        double[][] filterData = new double[][]{{-1, 0, 0.5}, {0, 0.1, 0}, {0.5, 0, -1},};
         Matrix image = new Matrix(imageData);
         Matrix filter = new Matrix(filterData);
         image.printMatrix();
@@ -136,12 +110,9 @@ public class Main {
                 new Layer(32, ActivationFunction.SIGMOID),
                 new Layer(64, ActivationFunction.SIGMOID),
                 new Layer(128, ActivationFunction.SIGMOID),
-                new Layer(10, ActivationFunction.SIGMOID),
+                new Layer(10, ActivationFunction.SIGMOID)
         };
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(
-                784,
-                layers
-        );
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(ClassificationLossFunction.CATEGORICAL_CROSS_ENTROPY, 784, layers);
         jNeuralNetwork.setLearningRate(0.01);
         return jNeuralNetwork;
     }
@@ -155,7 +126,12 @@ public class Main {
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
         double[][] trainingInputs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
         double[][] trainingTargets = {{0}, {1}, {1}, {0}};
-        JNeuralNetwork jnn = new JNeuralNetwork(2, new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.RE_LU));
+        JNeuralNetwork jnn = new JNeuralNetwork(
+                RegressionLossFunction.SQUARED_ERROR,
+                2,
+                new Layer(4, ActivationFunction.SIGMOID),
+                new Layer(1, ActivationFunction.RE_LU)
+        );
         int epochs = 1000;
 //        double[] testingInputs = new double[]{0, 0};
         jnn.setLearningRate(0.01);

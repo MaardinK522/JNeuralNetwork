@@ -1,9 +1,7 @@
 package com.mkproductions.jnn.graphics.flappy_bird;
 
-import com.mkproductions.jnn.entity.ActivationFunction;
+import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.entity.Layer;
-import com.mkproductions.jnn.network.GeneticAlgorithm;
-import com.mkproductions.jnn.network.JNeuralNetwork;
 
 import javax.swing.*;
 import java.awt.*;

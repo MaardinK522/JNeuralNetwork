@@ -1,4 +1,6 @@
-package com.mkproductions.jnn.entity;
+package com.mkproductions.jnn.entity.activationFunctions;
+
+import com.mkproductions.jnn.entity.MapAble;
 
 public enum ActivationFunction {
     SIGMOID(

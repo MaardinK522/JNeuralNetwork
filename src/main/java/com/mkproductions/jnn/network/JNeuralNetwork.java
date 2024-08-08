@@ -1,9 +1,12 @@
 package com.mkproductions.jnn.network;
 
 import com.mkproductions.jnn.entity.*;
+import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
+import com.mkproductions.jnn.entity.lossFunctions.ClassificationLossFunction;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class JNeuralNetwork implements Serializable {
@@ -46,7 +49,8 @@ public class JNeuralNetwork implements Serializable {
         // Initializing the arrays
         this.weightsMatrices = new Matrix[netWorkLayers.length];
         this.biasesMatrices = new Matrix[netWorkLayers.length];
-
+        this.networkAccuracy = jNeuralNetwork.networkAccuracy;
+        this.lossFunction = jNeuralNetwork.lossFunction;
         // Assign weights and biases to matrix arrays
         for (int a = 0; a < this.weightsMatrices.length; a++) {
             if (a == 0) {
@@ -74,16 +78,17 @@ public class JNeuralNetwork implements Serializable {
         Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
         for (int a = 0; a < this.weightsMatrices.length; a++) {
             if (a == 0) {
-                outputMatrices[a] = Matrix.matrixMapping(Matrix.add(Matrix.matrixMultiplication(this.weightsMatrices[a], inputMatrix), this.biasesMatrices[a]), this.netWorkLayers[a].activationFunction().equation);
+                outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], inputMatrix);
+                outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
+                outputMatrices[a] = JNeuralNetwork.getAppliedActivationFunctionMatrix(outputMatrices[a], this.netWorkLayers[a].activationFunction());
                 continue;
             }
-            outputMatrices[a] = Matrix.matrixMapping(Matrix.add(Matrix.matrixMultiplication(this.weightsMatrices[a], outputMatrices[a - 1]), this.biasesMatrices[a]), this.netWorkLayers[a].activationFunction().equation);
+            outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], outputMatrices[a - 1]);
+            outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
+            outputMatrices[a] = JNeuralNetwork.getAppliedActivationFunctionMatrix(outputMatrices[a], this.netWorkLayers[a].activationFunction());
         }
         return outputMatrices[outputMatrices.length - 1].getColumn(0);
     }
-
-    // TODO: Implement (Adam, SGD, XGBoost)
-    // TODO: Loss function (Categorical cross entropy, Spars Categorical cross entropy)
 
     /**
      * Function to perform back-propagate and adjusts weights and biases as per the given inputs with targets.
@@ -102,23 +107,23 @@ public class JNeuralNetwork implements Serializable {
             if (a == 0) {
                 outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], inputMatrix);
                 outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
-                outputMatrices[a] = Matrix.matrixMapping(outputMatrices[a], this.netWorkLayers[a].activationFunction().equation);
+                outputMatrices[a] = JNeuralNetwork.getAppliedActivationFunctionMatrix(outputMatrices[a], this.netWorkLayers[a].activationFunction());
                 continue;
             }
             outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], outputMatrices[a - 1]);
             outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
-            outputMatrices[a] = Matrix.matrixMapping(outputMatrices[a], this.netWorkLayers[a].activationFunction().equation);
+            outputMatrices[a] = JNeuralNetwork.getAppliedActivationFunctionMatrix(outputMatrices[a], this.netWorkLayers[a].activationFunction());
         }
 
         Matrix outputMatrix = outputMatrices[outputMatrices.length - 1];
         Matrix targetMatrix = new Matrix(new double[][]{targetOutput}).transpose();
 
         // Output error matrix.
-        Matrix errorMatrix = Matrix.scalarMultiply(Matrix.subtract(outputMatrix, targetMatrix), -1);
-
+//        Matrix errorMatrix = Matrix.scalarMultiply(Matrix.subtract(outputMatrix, targetMatrix), -1);
+        Matrix errorMatrix = this.lossFunction.getLossFunctionMatrix(outputMatrix, targetMatrix);
         for (int layerIndex = this.netWorkLayers.length - 1; layerIndex >= 0; layerIndex--) {
             // Calculating gradients
-            Matrix gradientMatrix = Matrix.matrixMapping(outputMatrices[layerIndex], this.netWorkLayers[layerIndex].activationFunction().derivative);
+            Matrix gradientMatrix = JNeuralNetwork.getDactivatedActivationFunctionMatrix(outputMatrices[layerIndex], this.netWorkLayers[layerIndex].activationFunction());
             gradientMatrix = Matrix.elementWiseMultiply(gradientMatrix, errorMatrix);
             gradientMatrix = Matrix.scalarMultiply(gradientMatrix, -this.learningRate);
 
@@ -137,29 +142,6 @@ public class JNeuralNetwork implements Serializable {
         }
     }
 
-    private void backPropagateAdam(double[] inputs, double[] targetOutput) {
-        Matrix inputMatrix = Matrix.fromArray(inputs).transpose();
-        Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
-
-        for (int a = 0; a < this.weightsMatrices.length; a++) {
-            if (a == 0) {
-                outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], inputMatrix);
-                outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
-                outputMatrices[a] = Matrix.matrixMapping(outputMatrices[a], this.netWorkLayers[a].activationFunction().equation);
-                continue;
-            }
-            outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], outputMatrices[a - 1]);
-            outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
-            outputMatrices[a] = Matrix.matrixMapping(outputMatrices[a], this.netWorkLayers[a].activationFunction().equation);
-        }
-
-        Matrix outputMatrix = outputMatrices[outputMatrices.length - 1];
-        Matrix targetMatrix = new Matrix(new double[][]{targetOutput}).transpose();
-
-        // Output error matrix.
-        Matrix errorMatrix = Matrix.scalarMultiply(Matrix.subtract(outputMatrix, targetMatrix), -1);
-    }
-
     /**
      * Function to train model for mass amount of training inputs and outputs with random samples.
      *
@@ -168,9 +150,19 @@ public class JNeuralNetwork implements Serializable {
      * @param trainingOutputs 2D array of outputs for training the model.
      */
     public void train(double[][] trainingInputs, double[][] trainingOutputs, int epochCount) {
-        if (trainingInputs[0].length != this.numberOfInputNode) throw new RuntimeException("Mismatch inputs size.");
+        int outputCount = 0;
+        for (int i = 0; i < trainingOutputs.length; i++) {
+            for (int j = 0; j < trainingInputs[i].length; j++) {
+                outputCount++;
+            }
+        }
+        if (outputCount == 1 && this.lossFunction instanceof ClassificationLossFunction) {
+            throw new IllegalArgumentException("Loss function is not supported. Please proceed again to use a Linear regression loss function.");
+        }
+        if (trainingInputs[0].length != this.numberOfInputNode)
+            throw new IllegalArgumentException("Mismatch inputs size.");
         if (trainingOutputs[0].length != this.netWorkLayers[this.netWorkLayers.length - 1].numberOfNodes())
-            throw new RuntimeException("Mismatch outputs size.");
+            throw new IllegalArgumentException("Mismatch outputs size.");
         int progress;
         int lastProgress = 0;
         for (int epoch = 0; epoch < epochCount; epoch++) {
@@ -232,6 +224,44 @@ public class JNeuralNetwork implements Serializable {
         return accuracy;
     }
 
+    public static Matrix getAppliedActivationFunctionMatrix(Matrix matrix, ActivationFunction activationFunction) {
+        Matrix result = new Matrix(matrix.getRowCount(), matrix.getColumnCount());
+        if (!activationFunction.name().equals("softmax")) result.matrixMapping(activationFunction.equation);
+        else {
+            result.matrixMapping((r, c, value) -> Math.exp(value));
+            for (int layerIndex = 0; layerIndex < result.getColumnCount(); layerIndex++) {
+                double[] column = result.getColumn(layerIndex);
+                Double sum = 0.0;
+                for (Double value : column) sum += value;
+                for (int rowIndex = 0; rowIndex < column.length; rowIndex++)
+                    result.setEntry(rowIndex, layerIndex, result.getEntry(rowIndex, layerIndex) / sum);
+            }
+        }
+        return result;
+    }
+
+    public static Matrix getDactivatedActivationFunctionMatrix(Matrix activatedMatrix, ActivationFunction activationFunction) {
+        Matrix result = new Matrix(activatedMatrix.getRowCount(), activatedMatrix.getColumnCount());
+        if (!activationFunction.name().equals("softmax")) {
+            result.matrixMapping(activationFunction.equation);
+        } else {
+            // Softmax derivative implementation
+            result.matrixMapping((rowIndex, columnIndex, value) -> {
+                double sum = 0.0;
+                for (int j = 0; j < result.getColumnCount(); j++) {
+                    sum += Math.exp(activatedMatrix.getEntry(rowIndex, j));
+                }
+                double softmax_j = Math.exp(value) / sum;
+                if (columnIndex == rowIndex) {
+                    return softmax_j * (1 - softmax_j); // Diagonal element (y_i * (1 - y_i))
+                } else {
+                    return softmax_j * -Math.exp(activatedMatrix.getEntry(rowIndex, columnIndex)) / sum; // Off-diagonal element (y_i * -y_j)
+                }
+            });
+        }
+        return result;
+    }
+
     public double getLearningRate() {
         return learningRate;
     }
@@ -239,5 +269,4 @@ public class JNeuralNetwork implements Serializable {
     public void setLearningRate(double learningRate) {
         this.learningRate = learningRate;
     }
-
 }
