@@ -8,6 +8,19 @@ import com.mkproductions.jnn.entity.Matrix;
  */
 public enum RegressionLossFunction implements LossFunction {
     /**
+     * Absolute error loss function.
+     */
+    ABSOLUTE_ERROR {
+        @Override
+        public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
+            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
+                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
+            }
+            // Calculate the squared error for each element in the matrix.
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> prediction.getEntry(row, column) - target.getEntry(row, column));
+        }
+    },
+    /**
      * Squared error loss function.
      */
     SQUARED_ERROR {

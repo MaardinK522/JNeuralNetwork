@@ -5,6 +5,7 @@ import com.mkproductions.jnn.entity.*;
 import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.entity.lossFunctions.ClassificationLossFunction;
 import com.mkproductions.jnn.entity.lossFunctions.RegressionLossFunction;
+import com.mkproductions.jnn.entity.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.graphics.mnist.MNISTFrame;
 import com.mkproductions.jnn.graphics.training_view.NeuralNetworkTrainingViewerJFrame;
 import com.mkproductions.jnn.graphics.xor.XORFrame;
@@ -19,16 +20,16 @@ public class Main {
     private static final double[][] trainingOutputs = {{0}, {1}, {0}, {1}};
 
     public static void main(String[] args) {
-//        testingXORProblem();
+        testingXORProblem();
 //        testingNetworkTraining();
-        testingMNISTCSVTrainingTesting();
+//        testingMNISTCSVTrainingTesting();
 //        testingCSVBufferedReader();
 //        performingConvolution();
 //        renderNetwork();
     }
 
     private static void renderNetwork() {
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(RegressionLossFunction.SQUARED_ERROR, 2, new Layer(4, ActivationFunction.SIGMOID), new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.SIGMOID));
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(RegressionLossFunction.SQUARED_ERROR, JNeuralNetworkOptimizer.SGD_MOMENTUM, 2, new Layer(4, ActivationFunction.SIGMOID), new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.SIGMOID));
         new NeuralNetworkTrainingViewerJFrame(jNeuralNetwork, trainingInputs, trainingOutputs).startRendering();
     }
 
@@ -112,7 +113,7 @@ public class Main {
                 new Layer(128, ActivationFunction.SIGMOID),
                 new Layer(10, ActivationFunction.SIGMOID)
         };
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(ClassificationLossFunction.CATEGORICAL_CROSS_ENTROPY, 784, layers);
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(ClassificationLossFunction.CATEGORICAL_CROSS_ENTROPY, JNeuralNetworkOptimizer.SGD_MOMENTUM, 784, layers);
         jNeuralNetwork.setLearningRate(0.01);
         return jNeuralNetwork;
     }
@@ -128,6 +129,7 @@ public class Main {
         double[][] trainingTargets = {{0}, {1}, {1}, {0}};
         JNeuralNetwork jnn = new JNeuralNetwork(
                 RegressionLossFunction.SQUARED_ERROR,
+                JNeuralNetworkOptimizer.SGD_MOMENTUM,
                 2,
                 new Layer(4, ActivationFunction.SIGMOID),
                 new Layer(1, ActivationFunction.RE_LU)
