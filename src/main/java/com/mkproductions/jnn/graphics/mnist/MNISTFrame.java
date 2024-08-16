@@ -4,7 +4,7 @@ import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.entity.CSVBufferedReader;
 import com.mkproductions.jnn.entity.Layer;
 import com.mkproductions.jnn.entity.Mapper;
-import com.mkproductions.jnn.entity.lossFunctions.ClassificationLossFunction;
+import com.mkproductions.jnn.entity.lossFunctions.LossFunction;
 import com.mkproductions.jnn.entity.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.network.JNeuralNetwork;
 
@@ -96,7 +96,7 @@ public class MNISTFrame extends JFrame {
 
     private void restartNetwork() {
         jNeuralNetwork = new JNeuralNetwork(
-                ClassificationLossFunction.SPARSE_CATEGORICAL_CROSS_ENTROPY,
+                LossFunction.SPARSE_CATEGORICAL_CROSS_ENTROPY,
                 JNeuralNetworkOptimizer.SGD_MOMENTUM,
                 28 * 28,
                 networkLayers

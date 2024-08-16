@@ -1,10 +1,8 @@
 package com.mkproductions;
 
-
 import com.mkproductions.jnn.entity.*;
 import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
-import com.mkproductions.jnn.entity.lossFunctions.ClassificationLossFunction;
-import com.mkproductions.jnn.entity.lossFunctions.RegressionLossFunction;
+import com.mkproductions.jnn.entity.lossFunctions.LossFunction;
 import com.mkproductions.jnn.entity.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.graphics.mnist.MNISTFrame;
 import com.mkproductions.jnn.graphics.training_view.NeuralNetworkTrainingViewerJFrame;
@@ -29,7 +27,7 @@ public class Main {
     }
 
     private static void renderNetwork() {
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(RegressionLossFunction.SQUARED_ERROR, JNeuralNetworkOptimizer.SGD_MOMENTUM, 2, new Layer(4, ActivationFunction.SIGMOID), new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.SIGMOID));
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.SQUARED_ERROR, JNeuralNetworkOptimizer.SGD_MOMENTUM, 2, new Layer(4, ActivationFunction.SIGMOID), new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.SIGMOID));
         new NeuralNetworkTrainingViewerJFrame(jNeuralNetwork, trainingInputs, trainingOutputs).startRendering();
     }
 
@@ -113,7 +111,7 @@ public class Main {
                 new Layer(128, ActivationFunction.SIGMOID),
                 new Layer(10, ActivationFunction.SIGMOID)
         };
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(ClassificationLossFunction.CATEGORICAL_CROSS_ENTROPY, JNeuralNetworkOptimizer.SGD_MOMENTUM, 784, layers);
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.CATEGORICAL_CROSS_ENTROPY, JNeuralNetworkOptimizer.SGD_MOMENTUM, 784, layers);
         jNeuralNetwork.setLearningRate(0.01);
         return jNeuralNetwork;
     }
@@ -128,7 +126,7 @@ public class Main {
         double[][] trainingInputs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
         double[][] trainingTargets = {{0}, {1}, {1}, {0}};
         JNeuralNetwork jnn = new JNeuralNetwork(
-                RegressionLossFunction.SQUARED_ERROR,
+                LossFunction.SQUARED_ERROR,
                 JNeuralNetworkOptimizer.SGD_MOMENTUM,
                 2,
                 new Layer(4, ActivationFunction.SIGMOID),

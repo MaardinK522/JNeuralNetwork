@@ -3,8 +3,7 @@ package com.mkproductions.jnn.graphics.xor;
 import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.entity.Layer;
 import com.mkproductions.jnn.entity.Mapper;
-import com.mkproductions.jnn.entity.lossFunctions.ClassificationLossFunction;
-import com.mkproductions.jnn.entity.lossFunctions.RegressionLossFunction;
+import com.mkproductions.jnn.entity.lossFunctions.LossFunction;
 import com.mkproductions.jnn.entity.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.network.JNeuralNetwork;
 
@@ -20,12 +19,12 @@ public class XORWindowPanel extends JPanel {
 
     public XORWindowPanel(int width, int height) {
         Layer[] networkLayers = new Layer[]{
-                new Layer(4, ActivationFunction.TAN_H),
-                new Layer(4, ActivationFunction.TAN_H),
+                new Layer(10, ActivationFunction.SIGMOID),
+                new Layer(10, ActivationFunction.SIGMOID),
                 new Layer(1, ActivationFunction.SIGMOID)
         };
         this.jNeuralNetwork = new JNeuralNetwork(
-                RegressionLossFunction.SQUARED_ERROR,
+                LossFunction.CATEGORICAL_CROSS_ENTROPY,
                 JNeuralNetworkOptimizer.SGD,
                 2,
                 networkLayers
@@ -34,7 +33,7 @@ public class XORWindowPanel extends JPanel {
         setSize(width, height);
         setVisible(true);
         setBackground(Color.black);
-        this.jNeuralNetwork.setLearningRate(0.00001);
+        this.jNeuralNetwork.setLearningRate(0.01);
     }
 
     @Override
@@ -45,15 +44,12 @@ public class XORWindowPanel extends JPanel {
             for (double y = 0; y < getHeight(); y += cellSize) {
                 double[] inputs = {x / getWidth(), y / getHeight()};
                 double prediction = this.jNeuralNetwork.processInputs(inputs)[0];
+                if (x == 0 && y == 0) System.out.println("Prediction: " + prediction);
                 int output = (int) Mapper.mapRangeToRange(prediction, 0, 1, 0, 255);
-                if (x == 0 && y == 0)
-                    System.out.print(prediction + " ");
                 g.setColor(new Color(output, output, output));
                 g.fillRect((int) x, (int) y, cellSize, cellSize);
             }
         }
-        System.out.println();
-        System.out.println();
         try {
             int epochs = 1000;
             this.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
@@ -62,7 +58,6 @@ public class XORWindowPanel extends JPanel {
         }
         g.setColor(Color.white);
         g.drawString("Learning rate: " + this.jNeuralNetwork.getLearningRate(), 10, 10);
-        System.out.println();
     }
 
     public int getCellCount() {
@@ -72,5 +67,4 @@ public class XORWindowPanel extends JPanel {
     public void setCellCount(double cellCount) {
         this.cellCount = cellCount;
     }
-
 }

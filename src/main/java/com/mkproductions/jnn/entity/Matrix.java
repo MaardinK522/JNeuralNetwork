@@ -177,6 +177,16 @@ public class Matrix {
         return result;
     }
 
+    public static Matrix clip(Matrix matrix, double min, double max) {
+        int rows = matrix.getRowCount();
+        int cols = matrix.getColumnCount();
+        double[][] data = matrix.getData();
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                data[i][j] = Math.max(min, Math.min(max, data[i][j]));
+        return new Matrix(data);
+    }
+
     public void setEntry(int row, int column, double value) {
         this.data[row][column] = value;
     }
@@ -220,8 +230,7 @@ public class Matrix {
             stringBuilder.append("[");
             for (int b = 0; b < this.getColumnCount(); b++) {
                 stringBuilder.append(this.getEntry(a, b));
-                if (b != this.getColumnCount() - 1)
-                    stringBuilder.append(", ");
+                if (b != this.getColumnCount() - 1) stringBuilder.append(", ");
             }
             stringBuilder.append("]");
             stringBuilder.append("\n");
