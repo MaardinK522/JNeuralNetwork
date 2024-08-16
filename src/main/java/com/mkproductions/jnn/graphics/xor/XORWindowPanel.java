@@ -24,7 +24,7 @@ public class XORWindowPanel extends JPanel {
                 new Layer(1, ActivationFunction.SIGMOID)
         };
         this.jNeuralNetwork = new JNeuralNetwork(
-                LossFunction.CATEGORICAL_CROSS_ENTROPY,
+                LossFunction.ABSOLUTE_ERROR,
                 JNeuralNetworkOptimizer.SGD,
                 2,
                 networkLayers

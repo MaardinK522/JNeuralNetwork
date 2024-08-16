@@ -18,9 +18,9 @@ public class Main {
     private static final double[][] trainingOutputs = {{0}, {1}, {0}, {1}};
 
     public static void main(String[] args) {
-        testingXORProblem();
+//        testingXORProblem();
 //        testingNetworkTraining();
-//        testingMNISTCSVTrainingTesting();
+        testingMNISTCSVTrainingTesting();
 //        testingCSVBufferedReader();
 //        performingConvolution();
 //        renderNetwork();

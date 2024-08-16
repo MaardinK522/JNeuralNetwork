@@ -23,7 +23,7 @@ public class MNISTNetworkJPanel extends JPanel {
         int x = 10;
         int y = 20;
         for (int a = 0; a < 10; a++) {
-            int prediction = (int) Mapper.mapRangeToRange(this.prediction[a], -1, 1, 0, 255);
+            int prediction = (int) Mapper.mapRangeToRange(this.prediction[a], 0, 1, 0, 255);
             int color = Math.min(prediction, 255);
             g.setColor(new Color(color, color, color));
             g.fillRect(x, y, 50, 50);

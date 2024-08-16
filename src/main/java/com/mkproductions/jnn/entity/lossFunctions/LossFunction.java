@@ -14,7 +14,7 @@ public enum LossFunction implements LossFunctionAble {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Calculate the squared error for each element in the matrix.
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> Math.abs(target.getEntry(row, column) - prediction.getEntry(row, column)));
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> target.getEntry(row, column) - prediction.getEntry(row, column));
         }
     },
     /**
@@ -29,10 +29,7 @@ public enum LossFunction implements LossFunctionAble {
             }
 
             // Calculate the squared error for each element in the matrix
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
-                var error = target.getEntry(row, column) - prediction.getEntry(row, column);
-                return Math.pow(error, 2);
-            });
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> Math.pow(prediction.getEntry(row, column), 2) - target.getEntry(row, column));
         }
     },
     /**

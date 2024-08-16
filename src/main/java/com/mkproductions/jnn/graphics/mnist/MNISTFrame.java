@@ -96,12 +96,14 @@ public class MNISTFrame extends JFrame {
 
     private void restartNetwork() {
         jNeuralNetwork = new JNeuralNetwork(
-                LossFunction.SPARSE_CATEGORICAL_CROSS_ENTROPY,
+                LossFunction.ABSOLUTE_ERROR,
                 JNeuralNetworkOptimizer.SGD_MOMENTUM,
                 28 * 28,
                 networkLayers
         );
-        jNeuralNetwork.setLearningRate(0.05);
+        jNeuralNetwork.setMomentumFactorBeta(0.5);
+        jNeuralNetwork.setLearningRate(0.01);
+        jNeuralNetwork.setDebugMode(true);
     }
 
     public void startRendering() {
@@ -176,7 +178,7 @@ public class MNISTFrame extends JFrame {
     }
 
     void triggerNetworkTraining() {
-        int epochs = 10;
+        int epochs = 1000;
         MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
         networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(MNISTFrame.testingInputs, MNISTFrame.testingOutputs);
     }

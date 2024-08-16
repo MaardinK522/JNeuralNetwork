@@ -9,18 +9,24 @@ import java.io.*;
 import java.util.Random;
 
 public class JNeuralNetwork implements Serializable {
+    private int networkAccuracy = 0;
     private final int numberOfInputNode;
+
     private final Layer[] netWorkLayers;
     private final Matrix[] weightsMatrices;
     private final Matrix[] biasesMatrices;
-    private double learningRate;
-    private int networkAccuracy = 0;
+    private final Matrix[] velocityWeightsMatrices;
+    private final Matrix[] velocityBiasesMatrices;
+
     private final LossFunctionAble lossFunctionable;
+
     private final JNeuralNetworkOptimizer jNeuralNetworkOptimizer;
-    private final double sgdMomentumFactor;
+
     private boolean debugMode = false;
-    Matrix[] velocityWeightsMatrices;
-    Matrix[] velocityBiasesMatrices;
+
+    private double learningRate;
+    private double momentumFactorBeta;
+    private final double epsilonRMSProp = Math.pow(1, -8);
 
     public JNeuralNetwork(LossFunctionAble lossFunctionable, JNeuralNetworkOptimizer jNeuralNetworkOptimizer, int numberOfInputNode, Layer... netWorkLayers) {
         this.lossFunctionable = lossFunctionable;
@@ -34,7 +40,7 @@ public class JNeuralNetwork implements Serializable {
         this.biasesMatrices = new Matrix[netWorkLayers.length];
         this.velocityWeightsMatrices = new Matrix[this.weightsMatrices.length];
         this.velocityBiasesMatrices = new Matrix[this.weightsMatrices.length];
-        this.sgdMomentumFactor = 0.9;
+        this.momentumFactorBeta = 0.9;
         // Assign weights and biases and velocity to matrix arrays
         for (int layerIndex = 0; layerIndex < this.weightsMatrices.length; layerIndex++) {
             if (layerIndex == 0) {
@@ -69,7 +75,7 @@ public class JNeuralNetwork implements Serializable {
         this.networkAccuracy = jNeuralNetwork.networkAccuracy;
         this.lossFunctionable = jNeuralNetwork.lossFunctionable;
         this.jNeuralNetworkOptimizer = jNeuralNetwork.jNeuralNetworkOptimizer;
-        this.sgdMomentumFactor = 0.9;
+        this.momentumFactorBeta = 0.9;
         this.debugMode = false;
         // Assign weights and biases and velocity to matrix arrays
         for (int layerIndex = 0; layerIndex < this.weightsMatrices.length; layerIndex++) {
@@ -211,12 +217,73 @@ public class JNeuralNetwork implements Serializable {
             Matrix deltaWeightsMatrix = Matrix.matrixMultiplication(gradientMatrix, previousOutputMatrixTranspose);
 
             // Calculating the velocities of the weights and biases
-            this.velocityWeightsMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.sgdMomentumFactor), Matrix.scalarMultiply(deltaWeightsMatrix, 1 - this.sgdMomentumFactor));
-            this.velocityBiasesMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.sgdMomentumFactor), Matrix.scalarMultiply(gradientMatrix, 1 - this.sgdMomentumFactor));
+            this.velocityWeightsMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta), Matrix.scalarMultiply(deltaWeightsMatrix, 1 - this.momentumFactorBeta));
+            this.velocityBiasesMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta), Matrix.scalarMultiply(gradientMatrix, 1 - this.momentumFactorBeta));
 
             // Applying the change of weights in the current weights of the network.
             this.weightsMatrices[layerIndex].subtract(this.velocityWeightsMatrices[layerIndex]);
             this.biasesMatrices[layerIndex].subtract(this.velocityBiasesMatrices[layerIndex]);
+        }
+    }
+
+    private void backPropagateRMSProp(double[] input, double[] targetOutput) {
+        if (input.length != this.numberOfInputNode)
+            throw new RuntimeException("Mismatch length of inputs to the network.");
+
+        final Matrix inputMatrix = Matrix.fromArray(input).transpose();
+        Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
+        for (int a = 0; a < this.weightsMatrices.length; a++) {
+            if (a == 0) {
+                outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], inputMatrix);
+                outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
+                outputMatrices[a] = Matrix.matrixMapping(outputMatrices[a], this.netWorkLayers[a].activationFunction().equation);
+                continue;
+            }
+            outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], outputMatrices[a - 1]);
+            outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
+            outputMatrices[a] = Matrix.matrixMapping(outputMatrices[a], this.netWorkLayers[a].activationFunction().equation);
+        }
+
+        final Matrix outputMatrix = outputMatrices[outputMatrices.length - 1];
+        final Matrix targetMatrix = new Matrix(new double[][]{targetOutput}).transpose();
+
+        // Output error matrix.
+        Matrix errorMatrix = this.lossFunctionable.getLossFunctionMatrix(outputMatrix, targetMatrix);
+
+        for (int layerIndex = this.netWorkLayers.length - 1; layerIndex >= 0; layerIndex--) {
+            // Calculating gradients
+            Matrix gradientMatrix = Matrix.matrixMapping(outputMatrices[layerIndex], this.netWorkLayers[layerIndex].activationFunction().derivative);
+            gradientMatrix = Matrix.elementWiseMultiply(gradientMatrix, errorMatrix);
+            gradientMatrix = Matrix.scalarMultiply(gradientMatrix, -this.learningRate);
+
+            // Calculating error
+            errorMatrix = Matrix.matrixMultiplication(this.weightsMatrices[layerIndex].transpose(), errorMatrix);
+
+            // Getting the inputs of the current layer.
+            Matrix previousOutputTransposeMatrix = (layerIndex == 0) ? inputMatrix.transpose() : outputMatrices[layerIndex - 1].transpose();
+
+            // Calculating the change in weights matrix for each layer of the network.
+            Matrix deltaWeightsMatrix = Matrix.matrixMultiplication(gradientMatrix, previousOutputTransposeMatrix);
+
+            // Calculating the velocities of the weights and biases
+            // weights
+            Matrix squaredDeltaWeightsMatrix = Matrix.matrixMapping(deltaWeightsMatrix, (r, c, val) -> Math.pow(val, 2));
+            this.velocityWeightsMatrices[layerIndex] = Matrix.add(
+                    Matrix.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta),
+                    Matrix.scalarMultiply(squaredDeltaWeightsMatrix, 1 - this.momentumFactorBeta)
+            );
+            Matrix newWeightsVelocityMatrix = this.velocityWeightsMatrices[layerIndex];
+            Matrix rootWithVelocityWegihtsMatrix = Matrix.matrixMapping(deltaWeightsMatrix, (r, c, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(newWeightsVelocityMatrix.getEntry(r, c) + this.epsilonRMSProp));
+
+            // biases
+            Matrix squaredGradientsMatrix = Matrix.matrixMapping(gradientMatrix, (r, c, gradient) -> Math.pow(gradient, 2));
+            this.velocityBiasesMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta), Matrix.scalarMultiply(squaredGradientsMatrix, 1 - this.momentumFactorBeta));
+            Matrix newBiasesVelocityMatrix = this.velocityBiasesMatrices[layerIndex];
+            Matrix rootWithVelocityBiasesMatrix = Matrix.matrixMapping(gradientMatrix, (r, c, gradient) -> this.learningRate * gradient / Math.sqrt(newBiasesVelocityMatrix.getEntry(r, c) + this.epsilonRMSProp));
+
+            // Applying the change of weights in the current weights of the network.
+            this.weightsMatrices[layerIndex].subtract(rootWithVelocityWegihtsMatrix);
+            this.biasesMatrices[layerIndex].subtract(rootWithVelocityBiasesMatrix);
         }
     }
 
@@ -243,6 +310,7 @@ public class JNeuralNetwork implements Serializable {
             switch (this.jNeuralNetworkOptimizer) {
                 case SGD -> backPropagateSGD(trainingInput, trainingOutput);
                 case SGD_MOMENTUM -> backPropagateSGDWithMomentum(trainingInput, trainingOutput);
+                case RMS_PROP -> backPropagateRMSProp(trainingInput, trainingOutput);
             }
             if (this.debugMode && progress != lastProgress) {
                 lastProgress = progress;
@@ -273,8 +341,12 @@ public class JNeuralNetwork implements Serializable {
             double[] prediction = this.processInputs(testingInputs[randomIndex]);
             double[] testingOutput = testingOutputs[randomIndex];
             int correctPredictionCount = 0;
+            boolean hasRegistered = false;
             for (int a = 0; a < prediction.length; a++) {
-                if (Math.abs(prediction[a]) == Math.abs(testingOutput[a])) correctPredictionCount++;
+                if (Math.ceil(prediction[a]) == Math.ceil(testingOutput[a]) && !hasRegistered) {
+                    hasRegistered = true;
+                    correctPredictionCount++;
+                }
             }
             if (correctPredictionCount < 10) correctCount++;
             if (progress != lastProgress) {
@@ -349,5 +421,13 @@ public class JNeuralNetwork implements Serializable {
 
     public void setDebugMode(boolean debugMode) {
         this.debugMode = debugMode;
+    }
+
+    public double getMomentumFactorBeta() {
+        return this.momentumFactorBeta;
+    }
+
+    public void setMomentumFactorBeta(double momentumFactorBeta) {
+        this.momentumFactorBeta = momentumFactorBeta;
     }
 }
