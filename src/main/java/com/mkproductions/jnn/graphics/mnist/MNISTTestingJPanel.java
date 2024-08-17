@@ -71,7 +71,7 @@ public class MNISTTestingJPanel extends JPanel {
         }
         double fps = 100000000.0 / (System.nanoTime() - startTime);
         g.setColor(Color.white);
-        g.drawString("FPS: " + fps, 10, 20);
+        g.drawString("FPS: " + (int) fps, 10, 20);
         g.drawString("Mouse pressed: " + mousePressed, 10, 35);
         g.drawString("Network accuracy: " + MNISTFrame.networkAccuracy + "%", 10, 50);
     }

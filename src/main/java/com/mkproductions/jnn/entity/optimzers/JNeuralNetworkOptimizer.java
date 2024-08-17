@@ -1,11 +1,11 @@
 package com.mkproductions.jnn.entity.optimzers;
 
 public enum JNeuralNetworkOptimizer {
-    SGD,
-    SGD_MOMENTUM,
-    RMS_PROP,
-//    ADAM,
-//    ADA_GARD,
+    SGD, // Stochastic Gradient Descent
+    SGD_MOMENTUM, // Stochastic Gradient Descent with Momentum
+    RMS_PROP, // Root Mean Squared Propagation
+    //    ADAM, // Adaptive Momentum
+    ADA_GARD, // Adaptive Gradients
 //    ADA_DELTA,
 //    ADA_GRAD_W
 }

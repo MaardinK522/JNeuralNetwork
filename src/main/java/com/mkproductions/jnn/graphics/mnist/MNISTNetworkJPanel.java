@@ -23,8 +23,7 @@ public class MNISTNetworkJPanel extends JPanel {
         int x = 10;
         int y = 20;
         for (int a = 0; a < 10; a++) {
-            int prediction = (int) Mapper.mapRangeToRange(this.prediction[a], 0, 1, 0, 255);
-            int color = Math.min(prediction, 255);
+            int color = (int) Mapper.mapRangeToRange(this.prediction[a], -1, 1, 0, 255);
             g.setColor(new Color(color, color, color));
             g.fillRect(x, y, 50, 50);
             g.setColor(Color.white);
@@ -44,7 +43,7 @@ public class MNISTNetworkJPanel extends JPanel {
         int index = 0;
         for (double[] doubles : dataGrid) {
             for (double aDouble : doubles) {
-                double data = Mapper.mapRangeToRange(aDouble, 0, 255, 0, 1);
+                double data = Mapper.mapRangeToRange(aDouble, 0, 255, -1, 1);
                 trainingInput[index++] = data;
             }
         }

@@ -25,7 +25,7 @@ public class XORWindowPanel extends JPanel {
         };
         this.jNeuralNetwork = new JNeuralNetwork(
                 LossFunction.ABSOLUTE_ERROR,
-                JNeuralNetworkOptimizer.SGD,
+                JNeuralNetworkOptimizer.RMS_PROP,
                 2,
                 networkLayers
         );

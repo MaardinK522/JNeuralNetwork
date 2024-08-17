@@ -17,7 +17,8 @@ public class JNeuralNetwork implements Serializable {
     private final Matrix[] biasesMatrices;
     private final Matrix[] velocityWeightsMatrices;
     private final Matrix[] velocityBiasesMatrices;
-
+    //    private final Matrix[] momentWeightsMatrices;
+//    private final Matrix[] momentumBiasesMatrices;
     private final LossFunctionAble lossFunctionable;
 
     private final JNeuralNetworkOptimizer jNeuralNetworkOptimizer;
@@ -26,7 +27,7 @@ public class JNeuralNetwork implements Serializable {
 
     private double learningRate;
     private double momentumFactorBeta;
-    private final double epsilonRMSProp = Math.pow(1, -8);
+    private final double epsilonRMSProp = Math.pow(10, -8);
 
     public JNeuralNetwork(LossFunctionAble lossFunctionable, JNeuralNetworkOptimizer jNeuralNetworkOptimizer, int numberOfInputNode, Layer... netWorkLayers) {
         this.lossFunctionable = lossFunctionable;
@@ -53,8 +54,14 @@ public class JNeuralNetwork implements Serializable {
             this.weightsMatrices[layerIndex].randomize();
             this.biasesMatrices[layerIndex].randomize();
             // Initializing the velocity matrices.
-            this.velocityWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRowCount(), this.weightsMatrices[layerIndex].getColumnCount());
-            this.velocityBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRowCount(), this.biasesMatrices[layerIndex].getColumnCount());
+            if (this.jNeuralNetworkOptimizer != JNeuralNetworkOptimizer.SGD && this.jNeuralNetworkOptimizer != JNeuralNetworkOptimizer.SGD_MOMENTUM) {
+                this.velocityWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRowCount(), this.weightsMatrices[layerIndex].getColumnCount());
+                this.velocityBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRowCount(), this.biasesMatrices[layerIndex].getColumnCount());
+            }
+//            if (this.jNeuralNetworkOptimizer == JNeuralNetworkOptimizer.ADAM) {
+//                this.momentWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRowCount(), this.weightsMatrices[layerIndex].getColumnCount());
+//                this.momentumBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRowCount(), this.biasesMatrices[layerIndex].getColumnCount());
+//            }
         }
     }
 
@@ -94,6 +101,11 @@ public class JNeuralNetwork implements Serializable {
         }
     }
 
+    private void generateIfInvalidParametersExceptionGenerates(int length) {
+        if (length != this.numberOfInputNode)
+            throw new RuntimeException("Mismatch length of inputs to the network.");
+    }
+
     /**
      * Process inputs and produces outputs as per the network schema.
      *
@@ -101,8 +113,7 @@ public class JNeuralNetwork implements Serializable {
      * @return double array of output predicted by the network.
      */
     public double[] processInputs(double @NotNull [] inputs) {
-        if (inputs.length != this.numberOfInputNode)
-            throw new RuntimeException("Mismatch length of inputs to the network.");
+        this.generateIfInvalidParametersExceptionGenerates(inputs.length);
         Matrix inputMatrix = Matrix.fromArray(inputs).transpose();
         Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
         for (int a = 0; a < this.weightsMatrices.length; a++) {
@@ -122,14 +133,13 @@ public class JNeuralNetwork implements Serializable {
     /**
      * Function to perform back-propagate and adjusts weights and biases as per the given inputs with targets.
      *
-     * @param input        2D array of inputs to be learned by network.
+     * @param inputs       2D array of inputs to be learned by network.
      * @param targetOutput 2D array to train the network as per inputs index.
      */
-    private void backPropagateSGD(double[] input, double[] targetOutput) {
-        if (input.length != this.numberOfInputNode)
-            throw new RuntimeException("Mismatch length of inputs to the network.");
+    private void backPropagateSGD(double[] inputs, double[] targetOutput) {
+        this.generateIfInvalidParametersExceptionGenerates(inputs.length);
 
-        Matrix inputMatrix = Matrix.fromArray(input).transpose();
+        Matrix inputMatrix = Matrix.fromArray(inputs).transpose();
         Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
 
         for (int a = 0; a < this.weightsMatrices.length; a++) {
@@ -172,11 +182,10 @@ public class JNeuralNetwork implements Serializable {
         }
     }
 
-    private void backPropagateSGDWithMomentum(double[] input, double[] targetOutput) {
-        if (input.length != this.numberOfInputNode)
-            throw new RuntimeException("Mismatch length of inputs to the network.");
+    private void backPropagateSGDWithMomentum(double[] inputs, double[] targetOutput) {
+        this.generateIfInvalidParametersExceptionGenerates(inputs.length);
 
-        Matrix inputMatrix = Matrix.fromArray(input).transpose();
+        Matrix inputMatrix = Matrix.fromArray(inputs).transpose();
         Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
         for (int a = 0; a < this.weightsMatrices.length; a++) {
             if (a == 0) {
@@ -226,11 +235,10 @@ public class JNeuralNetwork implements Serializable {
         }
     }
 
-    private void backPropagateRMSProp(double[] input, double[] targetOutput) {
-        if (input.length != this.numberOfInputNode)
-            throw new RuntimeException("Mismatch length of inputs to the network.");
+    private void backPropagateRMSProp(double[] inputs, double[] targetOutput) {
+        this.generateIfInvalidParametersExceptionGenerates(inputs.length);
 
-        final Matrix inputMatrix = Matrix.fromArray(input).transpose();
+        final Matrix inputMatrix = Matrix.fromArray(inputs).transpose();
         Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
         for (int a = 0; a < this.weightsMatrices.length; a++) {
             if (a == 0) {
@@ -268,10 +276,7 @@ public class JNeuralNetwork implements Serializable {
             // Calculating the velocities of the weights and biases
             // weights
             Matrix squaredDeltaWeightsMatrix = Matrix.matrixMapping(deltaWeightsMatrix, (r, c, val) -> Math.pow(val, 2));
-            this.velocityWeightsMatrices[layerIndex] = Matrix.add(
-                    Matrix.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta),
-                    Matrix.scalarMultiply(squaredDeltaWeightsMatrix, 1 - this.momentumFactorBeta)
-            );
+            this.velocityWeightsMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta), Matrix.scalarMultiply(squaredDeltaWeightsMatrix, 1 - this.momentumFactorBeta));
             Matrix newWeightsVelocityMatrix = this.velocityWeightsMatrices[layerIndex];
             Matrix rootWithVelocityWegihtsMatrix = Matrix.matrixMapping(deltaWeightsMatrix, (r, c, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(newWeightsVelocityMatrix.getEntry(r, c) + this.epsilonRMSProp));
 
@@ -280,6 +285,62 @@ public class JNeuralNetwork implements Serializable {
             this.velocityBiasesMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta), Matrix.scalarMultiply(squaredGradientsMatrix, 1 - this.momentumFactorBeta));
             Matrix newBiasesVelocityMatrix = this.velocityBiasesMatrices[layerIndex];
             Matrix rootWithVelocityBiasesMatrix = Matrix.matrixMapping(gradientMatrix, (r, c, gradient) -> this.learningRate * gradient / Math.sqrt(newBiasesVelocityMatrix.getEntry(r, c) + this.epsilonRMSProp));
+
+            // Applying the change of weights in the current weights of the network.
+            this.weightsMatrices[layerIndex].subtract(rootWithVelocityWegihtsMatrix);
+            this.biasesMatrices[layerIndex].subtract(rootWithVelocityBiasesMatrix);
+        }
+    }
+
+    private void backPropagateAdaGrad(double[] inputs, double[] targetOutput) {
+        this.generateIfInvalidParametersExceptionGenerates(inputs.length);
+        final Matrix inputMatrix = Matrix.fromArray(inputs).transpose();
+        Matrix[] outputMatrices = new Matrix[this.netWorkLayers.length];
+        for (int a = 0; a < this.weightsMatrices.length; a++) {
+            if (a == 0) {
+                outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], inputMatrix);
+                outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
+                outputMatrices[a] = Matrix.matrixMapping(outputMatrices[a], this.netWorkLayers[a].activationFunction().equation);
+                continue;
+            }
+            outputMatrices[a] = Matrix.matrixMultiplication(this.weightsMatrices[a], outputMatrices[a - 1]);
+            outputMatrices[a] = Matrix.add(outputMatrices[a], this.biasesMatrices[a]);
+            outputMatrices[a] = Matrix.matrixMapping(outputMatrices[a], this.netWorkLayers[a].activationFunction().equation);
+        }
+
+        final Matrix outputMatrix = outputMatrices[outputMatrices.length - 1];
+        final Matrix targetMatrix = new Matrix(new double[][]{targetOutput}).transpose();
+
+        // Output error matrix.
+        Matrix errorMatrix = this.lossFunctionable.getLossFunctionMatrix(outputMatrix, targetMatrix);
+
+        for (int layerIndex = this.netWorkLayers.length - 1; layerIndex >= 0; layerIndex--) {
+            // Calculating gradients
+            Matrix gradientMatrix = Matrix.matrixMapping(outputMatrices[layerIndex], this.netWorkLayers[layerIndex].activationFunction().derivative);
+            gradientMatrix = Matrix.elementWiseMultiply(gradientMatrix, errorMatrix);
+            gradientMatrix = Matrix.scalarMultiply(gradientMatrix, -this.learningRate);
+
+            // Calculating error
+            errorMatrix = Matrix.matrixMultiplication(this.weightsMatrices[layerIndex].transpose(), errorMatrix);
+
+            // Getting the inputs of the current layer.
+            Matrix previousOutputTransposeMatrix = (layerIndex == 0) ? inputMatrix.transpose() : outputMatrices[layerIndex - 1].transpose();
+
+            // Calculating the change in weights matrix for each layer of the network.
+            Matrix deltaWeightsMatrix = Matrix.matrixMultiplication(gradientMatrix, previousOutputTransposeMatrix);
+
+            Matrix squaredDeltaWeightsMatrix = Matrix.matrixMapping(deltaWeightsMatrix, (r, c, deltaWeight) -> Math.pow(deltaWeight, 2));
+            Matrix squaredGradientsMatrix = Matrix.matrixMapping(gradientMatrix, (r, c, gradient) -> Math.pow(gradient, 2));
+
+            // Calculating the velocities of the weights and biases
+            // weights
+            this.velocityWeightsMatrices[layerIndex] = Matrix.add(this.velocityWeightsMatrices[layerIndex], squaredDeltaWeightsMatrix);
+            this.velocityBiasesMatrices[layerIndex] = Matrix.add(this.velocityBiasesMatrices[layerIndex], squaredGradientsMatrix);
+            Matrix currentWeightVelocity = this.velocityWeightsMatrices[layerIndex];
+            Matrix currentBiasesVelocity = this.velocityBiasesMatrices[layerIndex];
+
+            Matrix rootWithVelocityWegihtsMatrix = Matrix.matrixMapping(deltaWeightsMatrix, (row, column, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(currentWeightVelocity.getEntry(row, column) + this.epsilonRMSProp));
+            Matrix rootWithVelocityBiasesMatrix = Matrix.matrixMapping(gradientMatrix, (row, column, gradient) -> this.learningRate * gradient / Math.sqrt(currentBiasesVelocity.getEntry(row, column) + this.epsilonRMSProp));
 
             // Applying the change of weights in the current weights of the network.
             this.weightsMatrices[layerIndex].subtract(rootWithVelocityWegihtsMatrix);
@@ -311,6 +372,7 @@ public class JNeuralNetwork implements Serializable {
                 case SGD -> backPropagateSGD(trainingInput, trainingOutput);
                 case SGD_MOMENTUM -> backPropagateSGDWithMomentum(trainingInput, trainingOutput);
                 case RMS_PROP -> backPropagateRMSProp(trainingInput, trainingOutput);
+                case ADA_GARD -> backPropagateAdaGrad(trainingInput, trainingOutput);
             }
             if (this.debugMode && progress != lastProgress) {
                 lastProgress = progress;
