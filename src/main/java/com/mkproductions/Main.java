@@ -55,10 +55,10 @@ public class Main {
         CSVBufferedReader csvTrainingDataBufferedReader = new CSVBufferedReader(trainingDataPath);
 
         List<List<Double>> csvTestingTableData = csvTestingDataBufferedReader.getTable();
-        List<Double> csvTestingOutputColumn = csvTestingDataBufferedReader.getColumn("label");
+        var csvTestingOutputColumn = csvTestingDataBufferedReader.getColumn("label");
 
         List<List<Double>> csvTrainingDataTable = csvTrainingDataBufferedReader.getTable();
-        List<Double> csvTrainingOutputColumn = csvTrainingDataBufferedReader.getColumn("label");
+        var csvTrainingOutputColumn = csvTrainingDataBufferedReader.getColumn("label");
 
         double[][] testingInputs = new double[csvTestingTableData.size()][csvTestingTableData.get(0).size()];
         double[][] testingOutputs = new double[csvTestingOutputColumn.size()][10];

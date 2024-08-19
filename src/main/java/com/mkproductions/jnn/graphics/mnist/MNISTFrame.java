@@ -7,10 +7,14 @@ import com.mkproductions.jnn.entity.Mapper;
 import com.mkproductions.jnn.entity.lossFunctions.LossFunction;
 import com.mkproductions.jnn.entity.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.network.JNeuralNetwork;
+import de.unknownreality.dataframe.DataFrame;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 
 public class MNISTFrame extends JFrame {
@@ -30,13 +34,8 @@ public class MNISTFrame extends JFrame {
 
     public MNISTFrame(String frameName) {
         // Initializing network
-        networkLayers = new Layer[]{
-                new Layer(28, ActivationFunction.RE_LU),
-                new Layer(28, ActivationFunction.RE_LU),
-                new Layer(10, ActivationFunction.SIGMOID),
-        };
+        networkLayers = new Layer[]{new Layer(128, ActivationFunction.RE_LU), new Layer(64, ActivationFunction.TAN_H), new Layer(10, ActivationFunction.SIGMOID),};
         this.restartNetwork();
-
         // Declaring size of the inputs & outputs.
         double[][][] trainingTestingData = this.prepareTrainingTestingDataSet();
         this.trainingInputs = trainingTestingData[0];
@@ -49,22 +48,16 @@ public class MNISTFrame extends JFrame {
 
         add(this.mnistNetworkJPanel, BorderLayout.EAST);
         add(this.mnistTestingJPanel, BorderLayout.WEST);
-        addKeyListener(
-                new KeyAdapter() {
-                    @Override
-                    public void keyPressed(KeyEvent e) {
-                        super.keyPressed(e);
-                        if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
-                            running = false;
-                        if (e.getKeyCode() == KeyEvent.VK_T)
-                            triggerNetworkTraining();
-                        if (e.getKeyCode() == KeyEvent.VK_C)
-                            clearGridData();
-                        if (e.getKeyCode() == KeyEvent.VK_R)
-                            restartNetwork();
-                    }
-                }
-        );
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                super.keyPressed(e);
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) running = false;
+                if (e.getKeyCode() == KeyEvent.VK_T) triggerNetworkTraining();
+                if (e.getKeyCode() == KeyEvent.VK_C) clearGridData();
+                if (e.getKeyCode() == KeyEvent.VK_R) restartNetwork();
+            }
+        });
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e) {
@@ -97,12 +90,13 @@ public class MNISTFrame extends JFrame {
     private void restartNetwork() {
         jNeuralNetwork = new JNeuralNetwork(
                 LossFunction.ABSOLUTE_ERROR,
-                JNeuralNetworkOptimizer.SGD_MOMENTUM,
+                JNeuralNetworkOptimizer.ADAM,
                 28 * 28,
                 networkLayers
         );
-        jNeuralNetwork.setMomentumFactorBeta(0.9);
-        jNeuralNetwork.setLearningRate(0.01);
+        jNeuralNetwork.setMomentumFactorBeta1(0.9);
+        jNeuralNetwork.setMomentumFactorBeta2(0.98);
+        jNeuralNetwork.setLearningRate(0.001);
         jNeuralNetwork.setDebugMode(true);
     }
 
@@ -112,7 +106,7 @@ public class MNISTFrame extends JFrame {
             this.mnistTestingJPanel.repaint();
             this.mnistNetworkJPanel.repaint();
             try {
-                Thread.sleep(1000 / 30);
+                Thread.sleep(1000 / 60);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -132,9 +126,9 @@ public class MNISTFrame extends JFrame {
         CSVBufferedReader csvTestingDataBufferedReader = new CSVBufferedReader(testingDataPath);
 
         List<List<Double>> csvTrainingDataTable = csvTrainingDataBufferedReader.getTable();
-        List<Double> csvTrainingOutputColumn = csvTrainingDataBufferedReader.getColumn("label");
+        var csvTrainingOutputColumn = csvTrainingDataBufferedReader.getColumn("label");
         List<List<Double>> csvTestingDataTable = csvTestingDataBufferedReader.getTable();
-        List<Double> csvTestingOutputColumn = csvTestingDataBufferedReader.getColumn("label");
+        var csvTestingOutputColumn = csvTestingDataBufferedReader.getColumn("label");
 
         double[][] trainingInputs = new double[csvTrainingDataTable.size()][csvTrainingDataTable.get(0).size()];
         double[][] trainingOutputs = new double[csvTrainingOutputColumn.size()][10];
@@ -142,43 +136,32 @@ public class MNISTFrame extends JFrame {
         double[][] testingOutputs = new double[csvTestingOutputColumn.size()][10];
 
         // For filtering training data.
-        for (int a = 0; a < csvTrainingDataTable.size(); a++) {
-            for (int b = 0; b < csvTrainingDataTable.get(a).size(); b++) {
-                trainingInputs[a][b] = Mapper.mapRangeToRange(csvTrainingDataTable.get(a).get(b), 0, 255, 0, 1);
-                System.out.print('.');
+        for (int a = 0; a < trainingInputs.length; a++) {
+            for (int b = 0; b < trainingInputs[0].length; b++) {
+                double value = csvTrainingDataTable.get(a).get(b);
+                trainingInputs[a][b] = Mapper.mapRangeToRange(value, 0, 255, 0, 1);
             }
         }
-        System.out.println();
         // Converting training outputs into raw arrays.
         for (int a = 0; a < trainingOutputs.length; a++) {
-            trainingOutputs[a][csvTrainingOutputColumn.get(a).intValue()] = 1;
-            System.out.print('.');
+            trainingOutputs[a][csvTrainingOutputColumn.get(a)] = 1;
         }
-        System.out.println();
         // For filtering testing data.
-        for (int a = 0; a < csvTestingDataTable.size(); a++) {
-            for (int b = 0; b < csvTestingDataTable.get(a).size(); b++) {
+        for (int a = 0; a < testingInputs.length; a++) {
+            for (int b = 0; b < testingInputs[0].length; b++) {
                 testingInputs[a][b] = Mapper.mapRangeToRange(csvTestingDataTable.get(a).get(b), 0, 255, 0, 1);
-                System.out.print('.');
             }
         }
-        System.out.println();
         // Converting testing outputs into raw outputs.
         for (int a = 0; a < testingOutputs.length; a++) {
-            testingOutputs[a][csvTestingOutputColumn.get(a).intValue()] = 1;
-            System.out.print('.');
+            testingOutputs[a][csvTestingOutputColumn.get(a)] = 1;
         }
         System.out.println("Thanks for waiting!!!");
-        return new double[][][]{
-                trainingInputs,
-                trainingOutputs,
-                testingInputs,
-                testingOutputs,
-        };
+        return new double[][][]{trainingInputs, trainingOutputs, testingInputs, testingOutputs,};
     }
 
     void triggerNetworkTraining() {
-        int epochs = 10000;
+        int epochs = 1000;
         MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
         networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(MNISTFrame.testingInputs, MNISTFrame.testingOutputs);
     }

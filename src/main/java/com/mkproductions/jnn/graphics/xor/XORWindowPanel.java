@@ -25,7 +25,7 @@ public class XORWindowPanel extends JPanel {
         };
         this.jNeuralNetwork = new JNeuralNetwork(
                 LossFunction.ABSOLUTE_ERROR,
-                JNeuralNetworkOptimizer.RMS_PROP,
+                JNeuralNetworkOptimizer.ADAM,
                 2,
                 networkLayers
         );
@@ -33,7 +33,9 @@ public class XORWindowPanel extends JPanel {
         setSize(width, height);
         setVisible(true);
         setBackground(Color.black);
-        this.jNeuralNetwork.setLearningRate(0.01);
+        this.jNeuralNetwork.setLearningRate(0.001);
+        this.jNeuralNetwork.setMomentumFactorBeta1(0.9);
+        this.jNeuralNetwork.setMomentumFactorBeta2(0.99);
     }
 
     @Override
