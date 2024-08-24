@@ -24,8 +24,8 @@ public class XORWindowPanel extends JPanel {
                 new Layer(1, ActivationFunction.SIGMOID)
         };
         this.jNeuralNetwork = new JNeuralNetwork(
-                LossFunction.ABSOLUTE_ERROR,
-                JNeuralNetworkOptimizer.ADAM,
+                LossFunction.LOG_COSH,
+                JNeuralNetworkOptimizer.ADA_GARD,
                 2,
                 networkLayers
         );
@@ -33,7 +33,7 @@ public class XORWindowPanel extends JPanel {
         setSize(width, height);
         setVisible(true);
         setBackground(Color.black);
-        this.jNeuralNetwork.setLearningRate(0.001);
+        this.jNeuralNetwork.setLearningRate(0.05);
         this.jNeuralNetwork.setMomentumFactorBeta1(0.9);
         this.jNeuralNetwork.setMomentumFactorBeta2(0.99);
     }
@@ -53,7 +53,7 @@ public class XORWindowPanel extends JPanel {
             }
         }
         try {
-            int epochs = 1000;
+            int epochs = 100;
             this.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
         } catch (Exception e) {
             throw new RuntimeException(e);

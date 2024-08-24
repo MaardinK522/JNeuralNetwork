@@ -34,7 +34,11 @@ public class MNISTFrame extends JFrame {
 
     public MNISTFrame(String frameName) {
         // Initializing network
-        networkLayers = new Layer[]{new Layer(128, ActivationFunction.RE_LU), new Layer(64, ActivationFunction.TAN_H), new Layer(10, ActivationFunction.SIGMOID),};
+        networkLayers = new Layer[]{
+                new Layer(128, ActivationFunction.RE_LU),
+                new Layer(64, ActivationFunction.SIGMOID),
+                new Layer(10, ActivationFunction.SIGMOID),
+        };
         this.restartNetwork();
         // Declaring size of the inputs & outputs.
         double[][][] trainingTestingData = this.prepareTrainingTestingDataSet();
@@ -89,14 +93,14 @@ public class MNISTFrame extends JFrame {
 
     private void restartNetwork() {
         jNeuralNetwork = new JNeuralNetwork(
-                LossFunction.ABSOLUTE_ERROR,
-                JNeuralNetworkOptimizer.ADAM,
+                LossFunction.LOG_COSH,
+                JNeuralNetworkOptimizer.RMS_PROP,
                 28 * 28,
                 networkLayers
         );
         jNeuralNetwork.setMomentumFactorBeta1(0.9);
         jNeuralNetwork.setMomentumFactorBeta2(0.98);
-        jNeuralNetwork.setLearningRate(0.001);
+        jNeuralNetwork.setLearningRate(0.01);
         jNeuralNetwork.setDebugMode(true);
     }
 
@@ -161,7 +165,7 @@ public class MNISTFrame extends JFrame {
     }
 
     void triggerNetworkTraining() {
-        int epochs = 1000;
+        int epochs = 100;
         MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
         networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(MNISTFrame.testingInputs, MNISTFrame.testingOutputs);
     }

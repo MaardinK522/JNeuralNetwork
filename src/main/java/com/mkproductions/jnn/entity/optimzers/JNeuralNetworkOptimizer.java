@@ -6,6 +6,4 @@ public enum JNeuralNetworkOptimizer {
     RMS_PROP, // Root Mean Squared Propagation
     ADAM, // Adaptive Moment estimation.
     ADA_GARD, // Adaptive Gradients
-//    ADA_DELTA,
-//    ADA_GRAD_W
 }

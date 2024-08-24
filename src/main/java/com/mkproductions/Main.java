@@ -27,7 +27,7 @@ public class Main {
     }
 
     private static void renderNetwork() {
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.SQUARED_ERROR, JNeuralNetworkOptimizer.SGD_MOMENTUM, 2, new Layer(4, ActivationFunction.SIGMOID), new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.SIGMOID));
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.MEAN_SQUARED_ERROR, JNeuralNetworkOptimizer.SGD_MOMENTUM, 2, new Layer(4, ActivationFunction.SIGMOID), new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.SIGMOID));
         new NeuralNetworkTrainingViewerJFrame(jNeuralNetwork, trainingInputs, trainingOutputs).startRendering();
     }
 
@@ -105,12 +105,7 @@ public class Main {
 
     @NotNull
     private static JNeuralNetwork getjNeuralNetwork() {
-        Layer[] layers = new Layer[]{
-                new Layer(32, ActivationFunction.SIGMOID),
-                new Layer(64, ActivationFunction.SIGMOID),
-                new Layer(128, ActivationFunction.SIGMOID),
-                new Layer(10, ActivationFunction.SIGMOID)
-        };
+        Layer[] layers = new Layer[]{new Layer(32, ActivationFunction.SIGMOID), new Layer(64, ActivationFunction.SIGMOID), new Layer(128, ActivationFunction.SIGMOID), new Layer(10, ActivationFunction.SIGMOID)};
         JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.CATEGORICAL_CROSS_ENTROPY, JNeuralNetworkOptimizer.SGD_MOMENTUM, 784, layers);
         jNeuralNetwork.setLearningRate(0.01);
         return jNeuralNetwork;
@@ -125,13 +120,7 @@ public class Main {
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
         double[][] trainingInputs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
         double[][] trainingTargets = {{0}, {1}, {1}, {0}};
-        JNeuralNetwork jnn = new JNeuralNetwork(
-                LossFunction.SQUARED_ERROR,
-                JNeuralNetworkOptimizer.SGD_MOMENTUM,
-                2,
-                new Layer(4, ActivationFunction.SIGMOID),
-                new Layer(1, ActivationFunction.RE_LU)
-        );
+        JNeuralNetwork jnn = new JNeuralNetwork(LossFunction.LOG_COSH, JNeuralNetworkOptimizer.SGD_MOMENTUM, 2, new Layer(4, ActivationFunction.SIGMOID), new Layer(1, ActivationFunction.RE_LU));
         int epochs = 1000;
 //        double[] testingInputs = new double[]{0, 0};
         jnn.setLearningRate(0.01);

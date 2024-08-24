@@ -14,13 +14,21 @@ public enum LossFunction implements LossFunctionAble {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Calculate the squared error for each element in the matrix.
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> target.getEntry(row, column) - prediction.getEntry(row, column));
+            return Matrix.matrixMapping(prediction, (row, column, value) -> target.getEntry(row, column) - value);
+        }
+
+        @Override
+        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
+                double error = target.getEntry(row, column) - prediction.getEntry(row, column);
+                return error >= 0 ? 1 : -1;
+            });
         }
     },
     /**
      * Squared error loss function.
      */
-    SQUARED_ERROR {
+    MEAN_SQUARED_ERROR {
         @Override
         public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
             // Ensure input matrices have the same dimensions
@@ -29,7 +37,12 @@ public enum LossFunction implements LossFunctionAble {
             }
 
             // Calculate the squared error for each element in the matrix
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> Math.pow(prediction.getEntry(row, column), 2) - target.getEntry(row, column));
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> Math.pow(prediction.getEntry(row, column) - target.getEntry(row, column), 2));
+        }
+
+        @Override
+        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
+            return Matrix.matrixMapping(new Matrix(prediction.getData()), ((row, column, value) -> -2 * (prediction.getEntry(row, column) - target.getEntry(row, column))));
         }
     },
     /**
@@ -49,10 +62,19 @@ public enum LossFunction implements LossFunctionAble {
                 return Math.abs(error);
             });
         }
+
+        @Override
+        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
+                double error = target.getEntry(row, column) - prediction.getEntry(row, column);
+                return error >= 0 ? 1 : -1;
+            });
+        }
     },
     /**
      * Smooth mean absolute error loss function.
      */
+    // TODO: Implement this loss function with the proper derivative.
     SMOOTH_MEAN_ABSOLUTE_ERROR {
         @Override
         public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
@@ -61,16 +83,31 @@ public enum LossFunction implements LossFunctionAble {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
 
-            // Calculate the smooth mean absolute error for each element in the matrix
             return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
                 double actual = target.getEntry(row, column);
                 double forecast = prediction.getEntry(row, column);
                 double absDiff = Math.abs(forecast - actual);
                 double absSum = Math.abs(actual) + Math.abs(forecast);
-                return absSum == 0 ? 0 : (2 * absDiff) / absSum; // Avoid division by zero
+                return absSum == 0 ? 0 : (2 * absDiff) / (absSum * absSum);
             });
         }
-    }, LOG_COSH_LOSS {
+
+
+        @Override
+        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
+                double actual = target.getEntry(row, column);
+                double forecast = prediction.getEntry(row, column);
+                double absDiff = Math.abs(forecast - actual);
+                double absSum = Math.abs(actual) + Math.abs(forecast);
+                return absSum == 0 ? 0 : (2 * (forecast - actual)) / (absSum * absSum);
+            });
+        }
+    },
+    /**
+     * Log cosh loss function.
+     */
+    LOG_COSH {
         @Override
         public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
             // ... (similar structure as other loss functions)
@@ -79,27 +116,15 @@ public enum LossFunction implements LossFunctionAble {
                 return Math.log(Math.cosh(error));
             });
         }
-    }, //    HUBER_LOSS {
-    //        @Override
-//        public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target, double delta) {
-//            // ... (similar structure as other loss functions)
-//            // You can adjust this hyperparameter
-//            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
-//                double error = prediction.getEntry(row, column) - target.getEntry(row, column);
-//                return error * error <= delta * delta ? 0.5 * error * error : delta * (Math.abs(error) - delta / 2);
-//            });
-//        }
-//    },
-//    QUANTILE_LOSS {
-//        @Override
-//        public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
-//            // ... (similar structure as other loss functions)
-//            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
-//                double error = prediction.getEntry(row, column) - target.getEntry(row, column);
-//                return quantile * Math.max(error, 0) + (1 - quantile) * Math.min(error, 0);
-//            });
-//        }
-//    }
+
+        @Override
+        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
+                double error = target.getEntry(row, column) - prediction.getEntry(row, column);
+                return Math.tanh(error);
+            });
+        }
+    },
     BINARY_CROSS_ENTROPY {
         @Override
         public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
@@ -117,9 +142,18 @@ public enum LossFunction implements LossFunctionAble {
                 return -(y * Math.log(p) + (1 - y) * Math.log(1 - p));
             });
         }
-    },
 
-    CATEGORICAL_CROSS_ENTROPY {
+        @Override
+        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
+            // Ensure input matrices have the same dimensions
+            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
+                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
+            }
+
+            // Calculate the derivative of binary cross-entropy loss for each element
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> (target.getEntry(row, column) - prediction.getEntry(row, column)));
+        }
+    }, CATEGORICAL_CROSS_ENTROPY {
         @Override
         public Matrix getLossFunctionMatrix(Matrix predictions, Matrix targets) {
             // Check for dimension compatibility
@@ -133,8 +167,18 @@ public enum LossFunction implements LossFunctionAble {
             // Calculate categorical cross-entropy loss for each element
             return Matrix.matrixMapping(predictions, (row, column, value) -> -targets.getEntry(row, column) * Math.log(value));
         }
-    },
 
+        @Override
+        public Matrix getDerivativeMatrix(Matrix predictions, Matrix targets) {
+            // Ensure input matrices have the same dimensions
+            if (predictions.getRowCount() != targets.getRowCount() || predictions.getColumnCount() != targets.getColumnCount()) {
+                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
+            }
+
+            // Calculate the derivative of categorical cross-entropy loss for each element
+            return Matrix.matrixMapping(predictions, (row, column, value) -> targets.getEntry(row, column) - value);
+        }
+    }, // TODO: Yet to implement the sparse categorical cross entropy.
     SPARSE_CATEGORICAL_CROSS_ENTROPY {
         @Override
         public Matrix getLossFunctionMatrix(Matrix predictions, Matrix trueLabels) {
@@ -151,21 +195,18 @@ public enum LossFunction implements LossFunctionAble {
                 return -Math.log(predictedProb);
             });
         }
-    },
 
-    HINGE_LOSS {
         @Override
-        public Matrix getLossFunctionMatrix(Matrix predictions, Matrix trueLabels) {
+        public Matrix getDerivativeMatrix(Matrix predictions, Matrix trueLabels) {
             // Check for dimension compatibility
             if (predictions.getRowCount() != trueLabels.getRowCount() || predictions.getColumnCount() != trueLabels.getColumnCount()) {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
 
-            // Calculate hinge loss for each element
+            // Calculate the derivative for each element
             return Matrix.matrixMapping(new Matrix(predictions.getRowCount(), predictions.getColumnCount()), (row, column, value) -> {
-                double correctClassScore = predictions.getEntry(row, (int) trueLabels.getEntry(row, 0));
-                double incorrectClassScore = predictions.getEntry(row, column);
-                return Math.max(0, 1 - (correctClassScore - incorrectClassScore));
+                int trueClass = (int) trueLabels.getEntry(row, 0);
+                return column == trueClass ? value - 1 : value;
             });
         }
     },
