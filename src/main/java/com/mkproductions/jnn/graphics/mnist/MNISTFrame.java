@@ -3,18 +3,13 @@ package com.mkproductions.jnn.graphics.mnist;
 import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.entity.CSVBufferedReader;
 import com.mkproductions.jnn.entity.Layer;
-import com.mkproductions.jnn.entity.Mapper;
 import com.mkproductions.jnn.entity.lossFunctions.LossFunction;
 import com.mkproductions.jnn.entity.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.network.JNeuralNetwork;
-import de.unknownreality.dataframe.DataFrame;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.List;
 
 public class MNISTFrame extends JFrame {
@@ -36,8 +31,7 @@ public class MNISTFrame extends JFrame {
         // Initializing network
         networkLayers = new Layer[]{
                 new Layer(128, ActivationFunction.RE_LU),
-                new Layer(64, ActivationFunction.SIGMOID),
-                new Layer(10, ActivationFunction.SIGMOID),
+                new Layer(10, ActivationFunction.SOFTMAX),
         };
         this.restartNetwork();
         // Declaring size of the inputs & outputs.
@@ -93,14 +87,14 @@ public class MNISTFrame extends JFrame {
 
     private void restartNetwork() {
         jNeuralNetwork = new JNeuralNetwork(
-                LossFunction.LOG_COSH,
+                LossFunction.CATEGORICAL_CROSS_ENTROPY,
                 JNeuralNetworkOptimizer.RMS_PROP,
                 28 * 28,
                 networkLayers
         );
+        jNeuralNetwork.setLearningRate(0.001);
         jNeuralNetwork.setMomentumFactorBeta1(0.9);
-        jNeuralNetwork.setMomentumFactorBeta2(0.98);
-        jNeuralNetwork.setLearningRate(0.01);
+        jNeuralNetwork.setMomentumFactorBeta1(0.998);
         jNeuralNetwork.setDebugMode(true);
     }
 
@@ -143,29 +137,29 @@ public class MNISTFrame extends JFrame {
         for (int a = 0; a < trainingInputs.length; a++) {
             for (int b = 0; b < trainingInputs[0].length; b++) {
                 double value = csvTrainingDataTable.get(a).get(b);
-                trainingInputs[a][b] = Mapper.mapRangeToRange(value, 0, 255, 0, 1);
+                trainingInputs[a][b] = value;//Mapper.mapRangeToRange(value, 0, 255, 0, 1);
             }
         }
         // Converting training outputs into raw arrays.
         for (int a = 0; a < trainingOutputs.length; a++) {
-            trainingOutputs[a][csvTrainingOutputColumn.get(a)] = 1;
+            trainingOutputs[a][0] = csvTrainingOutputColumn.get(a);
         }
         // For filtering testing data.
         for (int a = 0; a < testingInputs.length; a++) {
             for (int b = 0; b < testingInputs[0].length; b++) {
-                testingInputs[a][b] = Mapper.mapRangeToRange(csvTestingDataTable.get(a).get(b), 0, 255, 0, 1);
+                testingInputs[a][b] = csvTestingDataTable.get(a).get(b); //Mapper.mapRangeToRange(csvTestingDataTable.get(a).get(b), 0, 255, 0, 1);
             }
         }
         // Converting testing outputs into raw outputs.
         for (int a = 0; a < testingOutputs.length; a++) {
-            testingOutputs[a][csvTestingOutputColumn.get(a)] = 1;
+            testingOutputs[a][0] = csvTestingOutputColumn.get(a);
         }
         System.out.println("Thanks for waiting!!!");
         return new double[][][]{trainingInputs, trainingOutputs, testingInputs, testingOutputs,};
     }
 
     void triggerNetworkTraining() {
-        int epochs = 100;
+        int epochs = 10;
         MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
         networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(MNISTFrame.testingInputs, MNISTFrame.testingOutputs);
     }

@@ -1,6 +1,7 @@
 package com.mkproductions.jnn.graphics.mnist;
 
 import com.mkproductions.jnn.entity.Mapper;
+import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,8 +23,13 @@ public class MNISTNetworkJPanel extends JPanel {
         int gap = 20;
         int x = 10;
         int y = 20;
+        System.out.println();
         for (int a = 0; a < 10; a++) {
             int color = (int) Mapper.mapRangeToRange(this.prediction[a], -1, 1, 0, 255);
+            color = Math.abs(color);
+            if (color > 255)
+                color = 255;
+            System.out.println("Prediction: " + this.prediction[a]);
             g.setColor(new Color(color, color, color));
             g.fillRect(x, y, 50, 50);
             g.setColor(Color.white);
@@ -42,9 +48,8 @@ public class MNISTNetworkJPanel extends JPanel {
         double[] trainingInput = new double[dataGrid.length * dataGrid[0].length];
         int index = 0;
         for (double[] doubles : dataGrid) {
-            for (double aDouble : doubles) {
-                double data = Mapper.mapRangeToRange(aDouble, 0, 255, -1, 1);
-                trainingInput[index++] = data;
+            for (double adouble : doubles) {
+                trainingInput[index++] = adouble;
             }
         }
         this.prediction = MNISTFrame.processNetworkInputs(trainingInput);

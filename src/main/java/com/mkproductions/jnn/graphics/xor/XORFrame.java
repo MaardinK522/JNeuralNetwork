@@ -41,6 +41,13 @@ public class XORFrame extends JFrame {
                 }
             }
         });
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                System.exit(0);
+            }
+        });
         setTitle(frameName);
         setSize(this.w, this.h);
         setLocationRelativeTo(null);

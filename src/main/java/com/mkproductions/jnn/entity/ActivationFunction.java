@@ -1,5 +1,6 @@
 package com.mkproductions.jnn.entity;
 
+
 public enum ActivationFunction {
     SIGMOID("sigmoid", (a, b, x) -> 1.0 / (1 + Math.exp(-x)), (a, b, y) -> y * (1 - y)), // Sigmoid activation function with derivative.
     RE_LU("re_lu", (a, b, x) -> Math.max(0, x), (a, b, y) -> (y < 0) ? 0 : 1), // Rectified Linear Unit activation function with derivative.

@@ -3,8 +3,8 @@ package com.mkproductions.jnn.graphics.training_view;
 public class NetworkElementsIntroducer {
     float x;
     float y;
-    private float width;
-    private float height;
+    private final float width;
+    private final float height;
 
     public NetworkElementsIntroducer(float x, float y, float width, float height) {
         this.x = x;

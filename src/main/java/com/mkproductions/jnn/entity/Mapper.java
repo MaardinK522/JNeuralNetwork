@@ -12,10 +12,12 @@ public class Mapper {
     public static double mapPredictionToRange(double prediction, ActivationFunction activationFunction, int fromValue, int toValue) {
         if (activationFunction.name().equals(ActivationFunction.SIGMOID.name()))
             return prediction * toValue;
-        if (activationFunction.name().equals(ActivationFunction.TAN_H.name()))
+        else if (activationFunction.name().equals(ActivationFunction.TAN_H.name()))
             return mapRangeToRange(prediction, -1, 1, fromValue, toValue);
-        if (activationFunction.name().equals(ActivationFunction.RE_LU.name()))
+        else if (activationFunction.name().equals(ActivationFunction.RE_LU.name()))
             return (prediction < 0) ? 0 : toValue;
+        else if (activationFunction.name().equals(ActivationFunction.LINEAR.name()))
+            return prediction * toValue;
         return 0;
     }
 }

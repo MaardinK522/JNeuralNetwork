@@ -13,7 +13,7 @@ public class Bird extends GeneticAlgorithm.MutableChromosome {
     public final double x = 100;
     public double y;
     private double vel = 0;
-    public final double gravity = 0.5;
+    public final double gravity = 0.5F;
     private final int lift;
     final int size;
     public Color birdColor;
@@ -23,7 +23,7 @@ public class Bird extends GeneticAlgorithm.MutableChromosome {
     public int score = 0;
 
     public Bird(JNeuralNetwork jNeuralNetwork) {
-        this.y = height / 2.0;
+        this.y = (double) (height / 2.0);
         this.size = 50;
         this.lift = -10;
         this.isAlive = true;
@@ -37,8 +37,8 @@ public class Bird extends GeneticAlgorithm.MutableChromosome {
         if (this.isAlive) {
             double[] pipeInputs = pipe.getNetworkInputs();
             double[] inputs = new double[10];
-            inputs[0] = (x + size / 2.0) / width;
-            inputs[1] = (y + size / 2.0) / height;
+            inputs[0] = (double) ((x + size / 2.0) / width);
+            inputs[1] = (double) ((y + size / 2.0) / height);
             System.arraycopy(pipeInputs, 0, inputs, 2, pipeInputs.length);
             double[] outputs = this.jNeuralNetwork.processInputs(inputs);
             if (outputs[0] > outputs[1]) {

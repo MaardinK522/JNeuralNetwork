@@ -67,13 +67,13 @@ public class CSVBufferedReader {
             while ((rawRow = bufferedReader.readLine()) != null) {
                 String[] column = rawRow.split(",");
                 List<String> stringRow = Arrays.stream(column).toList();
-                List<Double> doubleRow = new ArrayList<>();
+                List<Double> floatRow = new ArrayList<>();
                 for (int a = 0; a < stringRow.size(); a++) {
                     if (a == 0) continue;
-                    doubleRow.add(Double.parseDouble(stringRow.get(a)));
+                    floatRow.add(Double.parseDouble(stringRow.get(a)));
                 }
-                csvTable.add(doubleRow);
-                System.out.println("Row: " + Arrays.toString(doubleRow.toArray()));
+                csvTable.add(floatRow);
+                System.out.println("Row: " + Arrays.toString(floatRow.toArray()));
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -10,7 +10,6 @@ import com.mkproductions.jnn.network.JNeuralNetwork;
 import javax.swing.*;
 import java.awt.*;
 
-
 public class XORWindowPanel extends JPanel {
     private double cellCount = 10;
     private final JNeuralNetwork jNeuralNetwork;
@@ -25,7 +24,7 @@ public class XORWindowPanel extends JPanel {
         };
         this.jNeuralNetwork = new JNeuralNetwork(
                 LossFunction.LOG_COSH,
-                JNeuralNetworkOptimizer.ADA_GARD,
+                JNeuralNetworkOptimizer.RMS_PROP,
                 2,
                 networkLayers
         );
@@ -33,9 +32,7 @@ public class XORWindowPanel extends JPanel {
         setSize(width, height);
         setVisible(true);
         setBackground(Color.black);
-        this.jNeuralNetwork.setLearningRate(0.05);
-        this.jNeuralNetwork.setMomentumFactorBeta1(0.9);
-        this.jNeuralNetwork.setMomentumFactorBeta2(0.99);
+        this.jNeuralNetwork.setLearningRate(0.01);
     }
 
     @Override
