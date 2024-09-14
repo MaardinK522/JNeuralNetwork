@@ -1,12 +1,15 @@
 package com.mkproductions.jnn.network;
 
-import com.mkproductions.jnn.entity.NetworkLayer;
-import com.mkproductions.jnn.entity.lossFunctions.LossFunctionManager;
-import com.mkproductions.jnn.entity.solvers.TaskGraphMatrixSolver;
+import com.mkproductions.jnn.lossFunctions.LossFunction;
+import com.mkproductions.jnn.gpu.entity.NetworkLayer;
+import com.mkproductions.jnn.gpu.TaskGraphMatrixSolver;
 import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.types.matrix.Matrix2DDouble;
+
+import java.security.SecureRandom;
+import java.util.Random;
 
 public class JGPUNeuralNetwork {
     private int epochs = 0;
@@ -15,27 +18,35 @@ public class JGPUNeuralNetwork {
     private final Matrix2DDouble[] weightsMatrices;
     private final Matrix2DDouble[] biasesMatrices;
     private final Matrix2DDouble[] outputMatrices;
-    private final Matrix2DDouble[] biasGradientsMatrices;
+    private final Matrix2DDouble[] errorMatrices;
+    private final Matrix2DDouble[] previousOutputTransposeMatrices;
+    private final Matrix2DDouble[] biasesGradientsMatrices;
     private final Matrix2DDouble[] weightGradientsMatrices;
+    private final Matrix2DDouble[] weightsTransposeMatrices;
     private double learningRate;
-    private double[] inputs;
-    private double[] targets;
+    private double[][] inputs;
+    private double[][] targets;
 
     private TornadoExecutionPlan networkInitializatonTornadoExecutionPlan;
     private TornadoExecutionPlan networkFeedForwardTornadoExecutionPlan;
     private TornadoExecutionPlan networkBackPropagationTornadoExecutionPlan;
-    private LossFunctionManager.LossFunction lossFunction;
+    private final LossFunction lossFunction;
 
-    public JGPUNeuralNetwork(LossFunctionManager.LossFunction lossFunction, int numberOfInputsNode, NetworkLayer... networkLayers) {
+    private final Random random = new SecureRandom();
+
+    public JGPUNeuralNetwork(LossFunction lossFunction, int numberOfInputsNode, NetworkLayer... networkLayers) {
         this.numberOfInputsNode = numberOfInputsNode;
         this.lossFunction = lossFunction;
         this.networkLayers = networkLayers;
         this.weightsMatrices = new Matrix2DDouble[this.networkLayers.length];
         this.biasesMatrices = new Matrix2DDouble[this.networkLayers.length];
         this.outputMatrices = new Matrix2DDouble[this.networkLayers.length];
-        this.biasGradientsMatrices = new Matrix2DDouble[this.networkLayers.length];
+        this.errorMatrices = new Matrix2DDouble[this.networkLayers.length];
+        this.previousOutputTransposeMatrices = new Matrix2DDouble[this.networkLayers.length];
+        this.biasesGradientsMatrices = new Matrix2DDouble[this.networkLayers.length];
         this.weightGradientsMatrices = new Matrix2DDouble[this.networkLayers.length];
-        this.inputs = new double[this.numberOfInputsNode];
+        this.weightsTransposeMatrices = new Matrix2DDouble[this.networkLayers.length];
+        this.inputs = new double[][] { new double[this.numberOfInputsNode] };
         this.learningRate = 0.01;
         for (int layerIndex = 0; layerIndex < this.networkLayers.length; layerIndex++) {
             if (layerIndex == 0) {
@@ -43,13 +54,20 @@ public class JGPUNeuralNetwork {
             } else {
                 this.weightsMatrices[layerIndex] = new Matrix2DDouble(this.networkLayers[layerIndex].numberOfNodes(), this.networkLayers[layerIndex - 1].numberOfNodes());
             }
-            this.biasesMatrices[layerIndex] = new Matrix2DDouble(this.networkLayers[layerIndex].numberOfNodes(), 1);
-            this.outputMatrices[layerIndex] = new Matrix2DDouble(this.biasesMatrices[layerIndex].getNumRows(), 1);
-            this.biasGradientsMatrices[layerIndex] = new Matrix2DDouble(this.outputMatrices[layerIndex].getNumRows(), this.outputMatrices[layerIndex].getNumColumns());
+            this.outputMatrices[layerIndex] = new Matrix2DDouble(this.networkLayers[layerIndex].numberOfNodes(), 1);
+            this.biasesMatrices[layerIndex] = new Matrix2DDouble(this.outputMatrices[layerIndex].getNumRows(), this.outputMatrices[layerIndex].getNumColumns());
+            this.errorMatrices[layerIndex] = new Matrix2DDouble(this.outputMatrices[layerIndex].getNumRows(), this.outputMatrices[layerIndex].getNumColumns());
+            this.biasesGradientsMatrices[layerIndex] = new Matrix2DDouble(this.biasesMatrices[layerIndex].getNumRows(), this.biasesMatrices[layerIndex].getNumColumns());
             this.weightGradientsMatrices[layerIndex] = new Matrix2DDouble(this.weightsMatrices[layerIndex].getNumRows(), this.weightsMatrices[layerIndex].getNumColumns());
+            this.weightsTransposeMatrices[layerIndex] = new Matrix2DDouble(this.weightsMatrices[layerIndex].getNumColumns(), this.weightsMatrices[layerIndex].getNumRows());
+            if (layerIndex == 0) {
+                this.previousOutputTransposeMatrices[layerIndex] = new Matrix2DDouble(1, this.numberOfInputsNode);
+            } else {
+                this.previousOutputTransposeMatrices[layerIndex] = new Matrix2DDouble(this.outputMatrices[layerIndex - 1].getNumColumns(), this.outputMatrices[layerIndex - 1].getNumRows());
+            }
         }
         this.initializeRandomNetwork();
-        this.targets = new double[this.networkLayers[this.networkLayers.length - 1].numberOfNodes()];
+        this.targets = new double[][] { new double[this.networkLayers[this.networkLayers.length - 1].numberOfNodes()] };
     }
 
     private void initializeRandomNetwork() {
@@ -63,8 +81,8 @@ public class JGPUNeuralNetwork {
         }
         // Initializing all the weights and biases matrices.
         for (int a = 0; a < this.networkLayers.length; a++) {
-            TaskGraphMatrixSolver.initializeMatrixWithRandomNumbers(initializeNetworkTaskGraph, STR."initWeightMatrix\{a}", this.weightsMatrices[a], System.nanoTime());
-            TaskGraphMatrixSolver.initializeMatrixWithRandomNumbers(initializeNetworkTaskGraph, STR."initBiasMatrix\{a}", this.biasesMatrices[a], System.nanoTime());
+            TaskGraphMatrixSolver.initializeMatrixWithRandomNumbers(initializeNetworkTaskGraph, STR."initWeightMatrix\{a}", this.weightsMatrices[a]);
+            TaskGraphMatrixSolver.initializeMatrixWithRandomNumbers(initializeNetworkTaskGraph, STR."initBiasMatrix\{a}", this.biasesMatrices[a]);
         }
         // Reverting required variables to the host machine.
         for (int a = 0; a < this.networkLayers.length; a++) {
@@ -78,9 +96,9 @@ public class JGPUNeuralNetwork {
     private void prepareFeedForwardTaskGraph() {
         // Creating the task graph for performing the feed forward propagation.
         TaskGraph feedForwardTaskGraph = new TaskGraph("FeedForwardNetwork");
-        Matrix2DDouble inputMatrix = new Matrix2DDouble(this.inputs.length, 1);
+        Matrix2DDouble inputMatrix = new Matrix2DDouble(this.inputs[0].length, 1);
         for (int a = 0; a < inputMatrix.getNumRows(); a++) {
-            inputMatrix.set(a, 0, this.inputs[a]);
+            inputMatrix.set(a, 0, this.inputs[0][a]);
         }
         // Transferring all network data to the computational device.
         feedForwardTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, inputMatrix);
@@ -89,16 +107,17 @@ public class JGPUNeuralNetwork {
             feedForwardTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, this.weightsMatrices[layerIndex]);
             feedForwardTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, this.biasesMatrices[layerIndex]);
         }
-
         // Attaching all the computation tasks in the task graph.
         for (int layerIndex = 0; layerIndex < this.outputMatrices.length; layerIndex++) {
             if (layerIndex == 0) {
-                TaskGraphMatrixSolver.solveMatrixMultiplication(feedForwardTaskGraph, "inputWithWeightMultiplication", this.weightsMatrices[layerIndex], inputMatrix, this.outputMatrices[layerIndex]);
+                TaskGraphMatrixSolver.solveMatrixMultiplication(feedForwardTaskGraph, "inputWithWeightMultiplication_", this.weightsMatrices[layerIndex], inputMatrix, this.outputMatrices[layerIndex]);
             } else {
-                TaskGraphMatrixSolver.solveMatrixMultiplication(feedForwardTaskGraph, STR."outputOfLayer\{layerIndex}_MatrixMultiplication", this.weightsMatrices[layerIndex], this.outputMatrices[layerIndex - 1], this.outputMatrices[layerIndex]);
+                TaskGraphMatrixSolver.solveMatrixMultiplication(feedForwardTaskGraph, STR."outputOfLayer_MatrixMultiplication_\{layerIndex}", this.weightsMatrices[layerIndex],
+                        this.outputMatrices[layerIndex - 1], this.outputMatrices[layerIndex]);
             }
-            TaskGraphMatrixSolver.solveAddition(feedForwardTaskGraph, STR."outputOfLayer\{layerIndex}WithBiases", this.outputMatrices[layerIndex], this.biasesMatrices[layerIndex]);
-            TaskGraphMatrixSolver.applyActivationFunction(feedForwardTaskGraph, STR."applyingActivationFunctionToLayerOutput\{layerIndex}", this.outputMatrices[layerIndex], this.networkLayers[layerIndex].activationFunction());
+            TaskGraphMatrixSolver.solveAddition(feedForwardTaskGraph, STR."outputOfLayerWithBiases\{layerIndex}", this.outputMatrices[layerIndex], this.biasesMatrices[layerIndex]);
+            TaskGraphMatrixSolver.applyActivationFunction(feedForwardTaskGraph, STR."applyingActivationFunctionToLayerOutput\{layerIndex}", this.outputMatrices[layerIndex],
+                    this.networkLayers[layerIndex].activationFunction());
         }
         // Reverting required outputs of all the layers.
         for (Matrix2DDouble outputMatrix : outputMatrices) {
@@ -110,75 +129,86 @@ public class JGPUNeuralNetwork {
 
     private void prepareBackPropagationTaskGraph() {
         TaskGraph backPropagationTaskGraph = new TaskGraph("BackPropagationNetwork");
-        // Creating the task graph for performing the feed forward propagation.
-        Matrix2DDouble inputMatrix = new Matrix2DDouble(this.inputs.length, 1);
-        Matrix2DDouble targetMatrix = new Matrix2DDouble(this.targets.length, 1);
-        Matrix2DDouble errorMatrix = new Matrix2DDouble(this.targets.length, 1);
-        for (int a = 0; a < inputMatrix.getNumRows(); a++) inputMatrix.set(a, 0, this.inputs[a]);
-        for (int a = 0; a < targetMatrix.getNumRows(); a++) targetMatrix.set(a, 0, this.targets[a]);
-        // Transferring all network data to the computational device.
+        int randomIndex = random.nextInt(this.inputs.length);
+        double[] input = this.inputs[randomIndex];
+        double[] target = this.targets[randomIndex];
+        Matrix2DDouble targetMatrix = new Matrix2DDouble(target.length, 1);
+        Matrix2DDouble inputMatrix = new Matrix2DDouble(this.inputs[0].length, 1);
+        for (int a = 0; a < inputMatrix.getNumRows(); a++) {
+            inputMatrix.set(0, a, input[a]);
+        }
+        for (int a = 0; a < targetMatrix.getNumRows(); a++) {
+            targetMatrix.set(0, a, target[a]);
+        }
         backPropagationTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, inputMatrix);
         backPropagationTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, targetMatrix);
-        backPropagationTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, errorMatrix);
-        for (int layerIndex = 0; layerIndex < outputMatrices.length; layerIndex++) {
-            backPropagationTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, this.outputMatrices[layerIndex]);
-            backPropagationTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, this.weightsMatrices[layerIndex]);
-            backPropagationTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, this.biasesMatrices[layerIndex]);
+        backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.previousOutputTransposeMatrices[0]);
+        for (int layerIndex = 0; layerIndex < this.networkLayers.length; layerIndex++) {
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.outputMatrices[layerIndex]);
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.previousOutputTransposeMatrices[layerIndex]);
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.errorMatrices[layerIndex]);
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.weightsMatrices[layerIndex]);
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.biasesMatrices[layerIndex]);
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.weightsTransposeMatrices[layerIndex]);
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.weightGradientsMatrices[layerIndex]);
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.EVERY_EXECUTION, this.biasesGradientsMatrices[layerIndex]);
         }
-
-        // Attaching all the computation tasks in the task graph.
         for (int layerIndex = 0; layerIndex < this.outputMatrices.length; layerIndex++) {
-            if (layerIndex == 0)
-                TaskGraphMatrixSolver.solveMatrixMultiplication(backPropagationTaskGraph, "inputWithWeightMultiplication", this.weightsMatrices[layerIndex], inputMatrix, this.outputMatrices[layerIndex]);
-            else
-                TaskGraphMatrixSolver.solveMatrixMultiplication(backPropagationTaskGraph, STR."outputOfLayer\{layerIndex}_MatrixMultiplication", this.weightsMatrices[layerIndex], this.outputMatrices[layerIndex - 1], this.outputMatrices[layerIndex]);
-            TaskGraphMatrixSolver.solveAddition(backPropagationTaskGraph, STR."outputOfLayer\{layerIndex}WithBiases", this.outputMatrices[layerIndex], this.biasesMatrices[layerIndex]);
-            TaskGraphMatrixSolver.applyActivationFunction(backPropagationTaskGraph, STR."applyingActivationFunctionToLayerOutput\{layerIndex}", this.outputMatrices[layerIndex], this.networkLayers[layerIndex].activationFunction());
-        }
-
-        // Performing back propagation.
-        TaskGraphMatrixSolver.calculateLossDerivative(backPropagationTaskGraph, "calculatingError", this.outputMatrices[this.outputMatrices.length - 1], targetMatrix, errorMatrix, this.lossFunction);
-        for (int layerIndex = this.networkLayers.length - 1; layerIndex >= 0; layerIndex--) {
-            // Calculating the gradients for bias matrix.
-            TaskGraphMatrixSolver.applyActivationFunctionDerivative(backPropagationTaskGraph, STR."activationFunctionDerivative\{layerIndex}:", this.outputMatrices[layerIndex], this.networkLayers[layerIndex].activationFunction());
-            TaskGraphMatrixSolver.solveElementWiseMultiplication(backPropagationTaskGraph, STR."elementWiseGradients\{layerIndex}", this.biasesMatrices[layerIndex], errorMatrix, this.biasGradientsMatrices[layerIndex]);
-            TaskGraphMatrixSolver.solveMatrixScaling(backPropagationTaskGraph, STR."learingRateMultiplication\{layerIndex}", this.biasGradientsMatrices[layerIndex], -this.learningRate, this.biasGradientsMatrices[layerIndex]);
-
-            // Resetting the error as per calculating iterative layers.
-            errorMatrix = new Matrix2DDouble(this.outputMatrices[layerIndex].getNumRows(), this.outputMatrices[layerIndex].getNumColumns());
-
-            backPropagationTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, errorMatrix);
-            //Calculating the gradients for weight matrix.
-            Matrix2DDouble weightsTranspose = new Matrix2DDouble(this.weightsMatrices[layerIndex].getNumRows(), this.weightsMatrices[layerIndex].getNumColumns());
-            TaskGraphMatrixSolver.transpose(backPropagationTaskGraph, STR."weightsTranspose\{layerIndex}", this.weightsMatrices[layerIndex], weightsTranspose);
-            TaskGraphMatrixSolver.solveMatrixMultiplication(backPropagationTaskGraph, STR."weightMatrixMultiplication\{layerIndex}", weightsTranspose, errorMatrix, errorMatrix);
-            Matrix2DDouble previousMatrix;
             if (layerIndex == 0) {
-                previousMatrix = new Matrix2DDouble(inputMatrix.getNumColumns(), inputMatrix.getNumRows());
+                TaskGraphMatrixSolver.solveMatrixMultiplication(backPropagationTaskGraph, "inputWithWeightMultiplication:", this.weightsMatrices[layerIndex], inputMatrix,
+                        this.outputMatrices[layerIndex]);
             } else {
-                previousMatrix = new Matrix2DDouble(this.outputMatrices[layerIndex - 1].getNumRows(), this.outputMatrices[layerIndex - 1].getNumColumns());
+                TaskGraphMatrixSolver.solveMatrixMultiplication(backPropagationTaskGraph, STR."outputOfLayer_MatrixMultiplication:\{layerIndex}", this.weightsMatrices[layerIndex],
+                        this.outputMatrices[layerIndex - 1], this.outputMatrices[layerIndex]);
             }
-            backPropagationTaskGraph.transferToDevice(DataTransferMode.FIRST_EXECUTION, previousMatrix);
-            TaskGraphMatrixSolver.transpose(backPropagationTaskGraph, STR."previousMatrix\{layerIndex}", layerIndex == 0 ? inputMatrix : this.outputMatrices[layerIndex - 1], previousMatrix);
-            TaskGraphMatrixSolver.solveMatrixMultiplication(backPropagationTaskGraph, STR."calculatingWrightGradients\{layerIndex}", this.biasGradientsMatrices[layerIndex], previousMatrix, this.weightGradientsMatrices[layerIndex]);
+            TaskGraphMatrixSolver.solveAddition(backPropagationTaskGraph, STR."outputOfLayerWithBiases:\{layerIndex}", this.outputMatrices[layerIndex], this.biasesMatrices[layerIndex]);
+            TaskGraphMatrixSolver.applyActivationFunction(backPropagationTaskGraph, STR."applyingActivationFunctionToLayerOutput\{layerIndex}", this.outputMatrices[layerIndex],
+                    this.networkLayers[layerIndex].activationFunction());
+        }
+        // Performing back propagation.
+        TaskGraphMatrixSolver.calculateLossDerivative(backPropagationTaskGraph, "calculatingError:", this.outputMatrices[this.outputMatrices.length - 1], targetMatrix,
+                this.errorMatrices[this.outputMatrices.length - 1], this.lossFunction);
+        for (int layerIndex = this.networkLayers.length - 1; layerIndex >= 0; layerIndex--) {
+            backPropagationTaskGraph.transferToDevice(DataTransferMode.UNDER_DEMAND, this.errorMatrices[layerIndex]);
+            // Calculating the gradients for bias matrix.
+            TaskGraphMatrixSolver.applyActivationFunctionDerivative(backPropagationTaskGraph, STR."activationFunctionDerivative\{layerIndex}:", this.outputMatrices[layerIndex],
+                    this.networkLayers[layerIndex].activationFunction());
+            TaskGraphMatrixSolver.solveElementWiseMultiplication(backPropagationTaskGraph, STR."elementWiseGradients\{layerIndex}:", this.biasesMatrices[layerIndex], this.errorMatrices[layerIndex],
+                    this.biasesGradientsMatrices[layerIndex]);
+            TaskGraphMatrixSolver.solveMatrixScaling(backPropagationTaskGraph, STR."learingRateMultiplication\{layerIndex}:", this.biasesGradientsMatrices[layerIndex], -this.learningRate);
+            //Calculating the gradients for weight matrix.
+            TaskGraphMatrixSolver.transpose(backPropagationTaskGraph, STR."weightsTranspose\{layerIndex}:", this.weightsMatrices[layerIndex], this.weightsTransposeMatrices[layerIndex]);
+            // Resetting the error as per calculating iterative layers.
+            if (layerIndex != 0) {
+                Matrix2DDouble hiddenLayerErrorMatrix = new Matrix2DDouble(this.outputMatrices[layerIndex - 1].getNumRows(), this.outputMatrices[layerIndex - 1].getNumColumns());
+                backPropagationTaskGraph.transferToDevice(DataTransferMode.UNDER_DEMAND, hiddenLayerErrorMatrix);
+                TaskGraphMatrixSolver.solveMatrixMultiplication(backPropagationTaskGraph, STR."weightTransposeErrorMatrixMultiplication:\{layerIndex}:", this.weightsTransposeMatrices[layerIndex],
+                        this.errorMatrices[layerIndex], hiddenLayerErrorMatrix);
+            }
+            TaskGraphMatrixSolver.transpose(backPropagationTaskGraph, STR."previousMatrix:\{layerIndex}", layerIndex == 0 ? inputMatrix : this.outputMatrices[layerIndex - 1],
+                    this.previousOutputTransposeMatrices[layerIndex]);
+            TaskGraphMatrixSolver.solveMatrixMultiplication(backPropagationTaskGraph, STR."calculatingWrightGradients:\{layerIndex}", this.biasesGradientsMatrices[layerIndex],
+                    this.previousOutputTransposeMatrices[layerIndex], this.weightGradientsMatrices[layerIndex]);
             // Updating the weights of the network.
-            TaskGraphMatrixSolver.solveSubtraction(backPropagationTaskGraph, STR."updatingWeights\{layerIndex}", this.weightsMatrices[layerIndex], this.weightGradientsMatrices[layerIndex]);
-            TaskGraphMatrixSolver.solveSubtraction(backPropagationTaskGraph, STR."updatingBiases\{layerIndex}", this.biasesMatrices[layerIndex], this.biasGradientsMatrices[layerIndex]);
+            TaskGraphMatrixSolver.solveSubtraction(backPropagationTaskGraph, STR."updatingWeights:\{layerIndex}", this.weightsMatrices[layerIndex], this.weightGradientsMatrices[layerIndex]);
+            TaskGraphMatrixSolver.solveSubtraction(backPropagationTaskGraph, STR."updatingBiases:\{layerIndex}", this.biasesMatrices[layerIndex], this.biasesGradientsMatrices[layerIndex]);
         }
-
-        // Reverting required outputs of all the layers.
-        for (Matrix2DDouble outputMatrix : outputMatrices) {
-            backPropagationTaskGraph.transferToHost(DataTransferMode.EVERY_EXECUTION, outputMatrix);
+        for (int layerIndex = 0; layerIndex < this.networkLayers.length; layerIndex++) {
+            // Reverting all the data to the host machine.
+            backPropagationTaskGraph.transferToHost(DataTransferMode.EVERY_EXECUTION, this.weightsMatrices[layerIndex]);
+            backPropagationTaskGraph.transferToHost(DataTransferMode.EVERY_EXECUTION, this.biasesMatrices[layerIndex]);
         }
-
         this.networkBackPropagationTornadoExecutionPlan = new TornadoExecutionPlan(backPropagationTaskGraph.snapshot());
     }
 
-    private void train(double[] trainingInputs, double[] trainingTargets) {
+    public void train(double[][] trainingInputs, double[][] trainingTargets, int epochs) {
+        this.epochs = epochs;
         this.inputs = trainingInputs;
         this.targets = trainingTargets;
         this.prepareBackPropagationTaskGraph();
-        this.networkBackPropagationTornadoExecutionPlan.execute();
+        var device = TornadoExecutionPlan.getDevice(0, 0);
+        //        System.out.println(STR."Device: \{device}");
+        this.networkBackPropagationTornadoExecutionPlan.withDevice(device).withWarmUp().execute();
     }
 
     public void initializeNetwork() {
@@ -186,28 +216,38 @@ public class JGPUNeuralNetwork {
     }
 
     public double[] predict(double[] inputs) {
-        this.inputs = inputs;
+        this.inputs = new double[][] { inputs };
         this.prepareFeedForwardTaskGraph();
         this.networkFeedForwardTornadoExecutionPlan.execute();
         Matrix2DDouble output = this.outputMatrices[this.outputMatrices.length - 1];
-        double[] predictions = new double[this.networkLayers[this.networkLayers.length - 1].numberOfNodes()];
-        for (int i = 0; i < predictions.length; i++) {
-            predictions[i] = output.get(i, 0);
-        }
-        return predictions;
+        return output.column(0).asBuffer().array();
+    }
+
+    public double getLearningRate() {
+        return learningRate;
+    }
+
+    public void setLearningRate(double learningRate) {
+        this.learningRate = learningRate;
     }
 
     public void printData() {
         System.out.println("Network layers: ");
-        for (NetworkLayer networkLayer : this.networkLayers)
+        NetworkLayer[] layers = this.networkLayers;
+        for (int a = 0; a < layers.length; a++) {
+            System.out.println(STR."Layer index: \{a}");
+            NetworkLayer networkLayer = layers[a];
             System.out.println(networkLayer);
-        System.out.println("All Weights Matrices");
-        for (int a = 0; a < this.networkLayers.length; a++) {
+            System.out.println("Weights: ");
             System.out.println(this.weightsMatrices[a]);
-        }
-        System.out.println("All Biases Matrices");
-        for (int a = 0; a < this.networkLayers.length; a++) {
+            System.out.println("Weights gradients: ");
+            System.out.println(this.weightGradientsMatrices[a]);
+            System.out.println("Biases: ");
             System.out.println(this.biasesMatrices[a]);
+            System.out.println("Biases gradients: ");
+            System.out.println(this.biasesGradientsMatrices[a]);
+            System.out.println();
         }
+        System.out.println();
     }
 }

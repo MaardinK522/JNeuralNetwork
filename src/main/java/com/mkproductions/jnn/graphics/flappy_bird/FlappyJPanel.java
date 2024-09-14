@@ -1,7 +1,7 @@
 package com.mkproductions.jnn.graphics.flappy_bird;
 
-import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
-import com.mkproductions.jnn.entity.Layer;
+import com.mkproductions.jnn.activationFunctions.ActivationFunction;
+import com.mkproductions.jnn.cpu.entity.Layer;
 
 import javax.swing.*;
 import java.awt.*;

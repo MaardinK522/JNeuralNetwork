@@ -1,4 +1,4 @@
-package com.mkproductions.jnn.entity.optimzers;
+package com.mkproductions.jnn.optimzers;
 
 public enum JNeuralNetworkOptimizer {
     SGD, // Stochastic Gradient Descent

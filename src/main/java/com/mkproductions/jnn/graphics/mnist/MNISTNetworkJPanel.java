@@ -1,7 +1,6 @@
 package com.mkproductions.jnn.graphics.mnist;
 
-import com.mkproductions.jnn.entity.Mapper;
-import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
+import com.mkproductions.jnn.cpu.entity.Mapper;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,6 +1,6 @@
-package com.mkproductions.jnn.entity;
+package com.mkproductions.jnn.cpu.entity;
 
-import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
+import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 
 public record Layer(int numberOfNodes, ActivationFunction activationFunction) {
     @Override

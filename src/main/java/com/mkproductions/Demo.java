@@ -1,11 +1,12 @@
 package com.mkproductions;
 
-import com.mkproductions.jnn.entity.NetworkLayer;
+import com.mkproductions.jnn.lossFunctions.LossFunction;
+import com.mkproductions.jnn.gpu.entity.NetworkLayer;
 
-import com.mkproductions.jnn.entity.activationFunctions.ActivationFunctionManager;
-import com.mkproductions.jnn.entity.lossFunctions.LossFunctionManager;
-import com.mkproductions.jnn.entity.solvers.TaskGraphMatrixSolver;
+import com.mkproductions.jnn.gpu.solver.ActivationFunctionSolver;
+import com.mkproductions.jnn.gpu.TaskGraphMatrixSolver;
 import com.mkproductions.jnn.network.JGPUNeuralNetwork;
+import org.jetbrains.annotations.NotNull;
 import uk.ac.manchester.tornado.api.*;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
 import uk.ac.manchester.tornado.api.exceptions.TornadoExecutionPlanException;
@@ -14,13 +15,16 @@ import uk.ac.manchester.tornado.api.types.matrix.Matrix2DDouble;
 import java.util.Arrays;
 
 public class Demo {
+    static double[][] trainingInputs = new double[][] { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 }, };
+    static double[][] trainingTargets = new double[][] { { 0 }, { 1 }, { 1 }, { 0 }, };
+
     // TornadoVM version: 1.0.7
     public static void main() {
-//        testAdditionOperationOnDevice();
-//        testMatrixMultiplicationOperationOnDevice();
-//        testingRandomNumberGenerator();
+        //        testAdditionOperationOnDevice();
+        //        testMatrixMultiplicationOperationOnDevice();
+        //        testingRandomNumberGenerator();
         testingNetworkInitialization();
-//        testingInterfaceFunctions();
+        //        testingInterfaceFunctions();
     }
 
     private static void testingInterfaceFunctions() {
@@ -28,8 +32,8 @@ public class Demo {
         var device = TornadoExecutionPlan.getDevice(1, 0);
         System.out.println(device);
         TaskGraph taskGraph = new TaskGraph("matrixOperation").transferToDevice(DataTransferMode.FIRST_EXECUTION, matrix1);
-        TaskGraphMatrixSolver.applyActivationFunction(taskGraph, "activationFunctionEquation", matrix1, ActivationFunctionManager.NetworkActivationFunction.SIGMOID);
-        TaskGraphMatrixSolver.applyActivationFunctionDerivative(taskGraph, "activationFunctionDerivative", matrix1, ActivationFunctionManager.NetworkActivationFunction.SIGMOID);
+        TaskGraphMatrixSolver.applyActivationFunction(taskGraph, "activationFunctionEquation", matrix1, ActivationFunctionSolver.NetworkActivationFunction.SIGMOID);
+        TaskGraphMatrixSolver.applyActivationFunctionDerivative(taskGraph, "activationFunctionDerivative", matrix1, ActivationFunctionSolver.NetworkActivationFunction.SIGMOID);
         taskGraph.transferToHost(DataTransferMode.EVERY_EXECUTION, matrix1);
         try (TornadoExecutionPlan plan = new TornadoExecutionPlan(taskGraph.snapshot())) {
             plan.withDevice(device).execute();
@@ -40,16 +44,29 @@ public class Demo {
     }
 
     private static void testingNetworkInitialization() {
-        JGPUNeuralNetwork jgpuNeuralNetwork = new JGPUNeuralNetwork(
-                LossFunctionManager.LossFunction.BINARY_CROSS_ENTROPY,
-                2,
-                new NetworkLayer(5, ActivationFunctionManager.NetworkActivationFunction.SIGMOID),
-                new NetworkLayer(2, ActivationFunctionManager.NetworkActivationFunction.SIGMOID),
-                new NetworkLayer(10, ActivationFunctionManager.NetworkActivationFunction.LINEAR)
-        );
+        JGPUNeuralNetwork jgpuNeuralNetwork = getJgpuNeuralNetwork();
+        jgpuNeuralNetwork.setLearningRate(0.5);
+        for (double[] trainingInput : trainingInputs) {
+            System.out.println(Arrays.toString(jgpuNeuralNetwork.predict(trainingInput)));
+        }
+        jgpuNeuralNetwork.setLearningRate(0.01);
+        for (int i = 0; i < 100; i++) {
+            jgpuNeuralNetwork.train(trainingInputs, trainingTargets, 1);
+        }
+        System.out.println();
+        for (double[] trainingInput : trainingInputs) {
+            System.out.println(Arrays.toString(jgpuNeuralNetwork.predict(trainingInput)));
+        }
+    }
+
+    private static @NotNull JGPUNeuralNetwork getJgpuNeuralNetwork() {
+        JGPUNeuralNetwork jgpuNeuralNetwork = new JGPUNeuralNetwork(LossFunction.BINARY_CROSS_ENTROPY, 2,
+                new NetworkLayer(8, ActivationFunctionSolver.NetworkActivationFunction.TAN_H), new NetworkLayer(8, ActivationFunctionSolver.NetworkActivationFunction.TAN_H),
+                new NetworkLayer(1, ActivationFunctionSolver.NetworkActivationFunction.SIGMOID));
         jgpuNeuralNetwork.initializeNetwork();
         jgpuNeuralNetwork.printData();
-        System.out.println(Arrays.toString(jgpuNeuralNetwork.predict(new double[]{0.1, 0.1})));
+        System.out.println("==========================NETWORK DATA==========================");
+        return jgpuNeuralNetwork;
     }
 
     private static void testingRandomNumberGenerator() {
@@ -59,7 +76,7 @@ public class Demo {
         System.out.println(device);
         TaskGraph taskGraph = new TaskGraph("matrixOperation").transferToDevice(DataTransferMode.FIRST_EXECUTION, matrix1);
         TaskGraphMatrixSolver.fill(taskGraph, "fillMatrix", 5.0, matrix1);
-        TaskGraphMatrixSolver.initializeMatrixWithRandomNumbers(taskGraph, "randomNumbers", matrix1, System.nanoTime());
+        TaskGraphMatrixSolver.initializeMatrixWithRandomNumbers(taskGraph, "randomNumbers", matrix1);
         taskGraph.transferToHost(DataTransferMode.EVERY_EXECUTION, matrix1);
         try (TornadoExecutionPlan plan = new TornadoExecutionPlan(taskGraph.snapshot())) {
             plan.withDevice(device).execute();

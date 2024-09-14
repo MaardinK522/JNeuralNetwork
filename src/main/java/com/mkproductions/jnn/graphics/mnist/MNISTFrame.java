@@ -1,10 +1,10 @@
 package com.mkproductions.jnn.graphics.mnist;
 
-import com.mkproductions.jnn.entity.activationFunctions.ActivationFunction;
-import com.mkproductions.jnn.entity.CSVBufferedReader;
-import com.mkproductions.jnn.entity.Layer;
-import com.mkproductions.jnn.entity.lossFunctions.LossFunction;
-import com.mkproductions.jnn.entity.optimzers.JNeuralNetworkOptimizer;
+import com.mkproductions.jnn.activationFunctions.ActivationFunction;
+import com.mkproductions.jnn.cpu.CSVBufferedReader;
+import com.mkproductions.jnn.cpu.entity.Layer;
+import com.mkproductions.jnn.lossFunctions.LossFunction;
+import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.network.JNeuralNetwork;
 
 import javax.swing.*;
@@ -87,7 +87,7 @@ public class MNISTFrame extends JFrame {
 
     private void restartNetwork() {
         jNeuralNetwork = new JNeuralNetwork(
-                LossFunction.CATEGORICAL_CROSS_ENTROPY,
+                LossFunction.MEAN_SQUARED_ERROR,
                 JNeuralNetworkOptimizer.RMS_PROP,
                 28 * 28,
                 networkLayers

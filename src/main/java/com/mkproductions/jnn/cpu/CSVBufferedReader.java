@@ -1,4 +1,4 @@
-package com.mkproductions.jnn.entity;
+package com.mkproductions.jnn.cpu;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
