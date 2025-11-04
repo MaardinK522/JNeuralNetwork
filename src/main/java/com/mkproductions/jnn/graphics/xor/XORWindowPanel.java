@@ -1,7 +1,7 @@
 package com.mkproductions.jnn.graphics.xor;
 
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
-import com.mkproductions.jnn.cpu.entity.Layer;
+import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.entity.Mapper;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
@@ -17,13 +17,21 @@ public class XORWindowPanel extends JPanel {
     private final double[][] trainingOutputs = { { 0 }, { 1 }, { 1 }, { 0 } };
 
     public XORWindowPanel(int width, int height) {
-        Layer[] networkLayers = new Layer[] { new Layer(8, ActivationFunction.TAN_H), new Layer(8, ActivationFunction.TAN_H), new Layer(1, ActivationFunction.TAN_H) };
-        this.jNeuralNetwork = new JNeuralNetwork(LossFunction.BINARY_CROSS_ENTROPY, JNeuralNetworkOptimizer.ADAM, 2, networkLayers);
+        DenseLayer[] networkDenseLayers = new DenseLayer[] { // Layers.
+                new DenseLayer(4, ActivationFunction.SIGMOID), // First Layer
+                new DenseLayer(1, ActivationFunction.SIGMOID) // Output Layer
+        };
+        this.jNeuralNetwork = new JNeuralNetwork( // Neural Network.
+                LossFunction.CATEGORICAL_CROSS_ENTROPY, // Loss function of the network.
+                JNeuralNetworkOptimizer.ADAM, // Optimizer
+                2, // Output nodes
+                networkDenseLayers // Layers
+        );
         this.jNeuralNetwork.setDebugMode(false);
         setSize(width, height);
         setVisible(true);
         setBackground(Color.black);
-        this.jNeuralNetwork.setLearningRate(0.01);
+        this.jNeuralNetwork.setLearningRate(0.0001);
     }
 
     @Override
@@ -35,20 +43,21 @@ public class XORWindowPanel extends JPanel {
                 double[] inputs = { x / getWidth(), y / getHeight() };
                 double prediction = this.jNeuralNetwork.processInputs(inputs)[0];
                 if (x == 0 && y == 0) {
-                    System.out.println(STR."Prediction: \{prediction}");
+                    System.out.println("Prediction: " + prediction);
                 }
-                int output = (int) Mapper.mapRangeToRange(prediction, -1, 1, 0, 255);
+                int output = (int) Mapper.mapRangeToRange(prediction, 0, 1, 0, 255);
+                //                int output = (prediction < 1) ? 0 : 255;
                 g.setColor(new Color(output, output, output));
                 g.fillRect((int) x, (int) y, cellSize, cellSize);
             }
         }
         try {
-            this.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, 1);
+            this.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, 1000);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         g.setColor(Color.white);
-        g.drawString(STR."Learning rate: \{this.jNeuralNetwork.getLearningRate()}", 10, 10);
+        g.drawString("Learning rate: " + this.jNeuralNetwork.getLearningRate(), 10, 10);
     }
 
     public int getCellCount() {
@@ -57,5 +66,10 @@ public class XORWindowPanel extends JPanel {
 
     public void setCellCount(double cellCount) {
         this.cellCount = cellCount;
+    }
+
+    public void printAccuracy() {
+        double accuracy = this.jNeuralNetwork.calculateAccuracy(this.trainingInputs, this.trainingOutputs);
+        System.out.println("Accuracy of the network: " + accuracy);
     }
 }

@@ -6,11 +6,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.Arrays;
 
-
-public class MNISTNetworkJPanel extends JPanel {
+public class MNISTNetworkOutputJPanel extends JPanel {
     private double[] prediction = new double[10];
 
-    public MNISTNetworkJPanel(int w, int h) {
+    public MNISTNetworkOutputJPanel(int w, int h) {
         setSize(w, h);
         setVisible(true);
         setBackground(Color.blue);
@@ -19,16 +18,16 @@ public class MNISTNetworkJPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+
         int gap = 20;
         int x = 10;
         int y = 20;
-        System.out.println();
         for (int a = 0; a < 10; a++) {
-            int color = (int) Mapper.mapRangeToRange(this.prediction[a], -1, 1, 0, 255);
+            int color = (int) Mapper.mapRangeToRange(prediction[a], 0, 1, 0, 255);
+            //            int color = (this.prediction[a] < 1) ? 0 : 255;
             color = Math.abs(color);
-            if (color > 255)
-                color = 255;
-            System.out.println("Prediction: " + this.prediction[a]);
+            //            if (color > 255) color = 255;
+            //            System.out.println("Prediction: " + this.prediction[a]);
             g.setColor(new Color(color, color, color));
             g.fillRect(x, y, 50, 50);
             g.setColor(Color.white);
@@ -39,19 +38,22 @@ public class MNISTNetworkJPanel extends JPanel {
                 x = 10;
             }
         }
-        this.triggerNetworkPrediction();
     }
 
     public void triggerNetworkPrediction() {
-        double[][] dataGrid = MNISTFrame.getDataGrid();
+        int[][] dataGrid = MNISTFrame.getDataGrid();
         double[] trainingInput = new double[dataGrid.length * dataGrid[0].length];
         int index = 0;
-        for (double[] doubles : dataGrid) {
-            for (double adouble : doubles) {
-                trainingInput[index++] = adouble;
+        for (int a = 0; a < dataGrid.length; a++) {
+            for (int b = 0; b < dataGrid[a].length; b++) {
+                int gridCell = dataGrid[b][a];
+                trainingInput[index++] = gridCell / 255.0;
+                System.out.print(gridCell == 0 ? "#" : "_");
             }
+            System.out.println();
         }
         this.prediction = MNISTFrame.processNetworkInputs(trainingInput);
         System.out.println("Prediction: " + Arrays.toString(this.prediction));
+        System.out.println();
     }
 }

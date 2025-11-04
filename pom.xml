@@ -9,18 +9,18 @@
     <version>1.0-SNAPSHOT</version>
 
     <profiles>
-    <profile>
-        <id>preview</id>
-        <activation>
-            <activeByDefault>true</activeByDefault>
-        </activation>
-        <properties>
-            <maven.compiler.target>21</maven.compiler.target>
-            <maven.compiler.source>21</maven.compiler.source>
-            <java.compiler.enablePreview>true</java.compiler.enablePreview>
-        </properties>
-    </profile>
-</profiles>
+        <profile>
+            <id>preview</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <maven.compiler.target>21</maven.compiler.target>
+                <maven.compiler.source>21</maven.compiler.source>
+                <java.compiler.enablePreview>true</java.compiler.enablePreview>
+            </properties>
+        </profile>
+    </profiles>
     <build>
         <plugins>
             <plugin>
@@ -74,12 +74,18 @@
         <dependency>
             <groupId>tornado</groupId>
             <artifactId>tornado-api</artifactId>
-            <version>1.0.7-dev</version>
+            <version>1.1.1</version>
         </dependency>
+
         <dependency>
             <groupId>tornado</groupId>
             <artifactId>tornado-matrices</artifactId>
-            <version>1.0.7-dev</version>
+            <version>1.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.2</version>
         </dependency>
     </dependencies>
 </project>

@@ -1,8 +1,13 @@
 package com.mkproductions.jnn.graphics.mnist;
 
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.cpu.CSVBufferedReader;
-import com.mkproductions.jnn.cpu.entity.Layer;
+import com.mkproductions.jnn.cpu.layers.DenseLayer;
+import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.network.JNeuralNetwork;
@@ -10,57 +15,112 @@ import com.mkproductions.jnn.network.JNeuralNetwork;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class MNISTFrame extends JFrame {
-    private static final double[][] dataGrid = new double[28][28];
-    public static double networkAccuracy;
-    int w = 560;
+    private static int epochCount = 10;
+    int w = 1000;
     int h = 560;
-    private final MNISTTestingJPanel mnistTestingJPanel;
-    private final MNISTNetworkJPanel mnistNetworkJPanel;
-    private boolean running = false;
+    private final MNISTDrawningJPanel mnistDrawningJPanel;
+    private final MNISTNetworkOutputJPanel mnistNetworkOutputJPanel;
+    private boolean running;
     private final double[][] trainingInputs;
     private final double[][] trainingOutputs;
-    public static double[][] testingInputs;
-    public static double[][] testingOutputs;
+    private final double[][] testingInputs;
+    private final double[][] testingOutputs;
+    private static final int[][] dataGrid = new int[28][28];
     private static JNeuralNetwork jNeuralNetwork;
-    public static Layer[] networkLayers;
+    private final SaveNeuralNetworkDialog saveNeuralNetworkDialog;
+    public static boolean autoTrainNetwork = false;
+    public static double networkAccuracy = 0.0;
+    public static DenseLayer[] networkDenseLayers;
 
     public MNISTFrame(String frameName) {
-        // Initializing network
-        networkLayers = new Layer[]{
-                new Layer(128, ActivationFunction.RE_LU),
-                new Layer(10, ActivationFunction.SOFTMAX),
-        };
-        this.restartNetwork();
-        // Declaring size of the inputs & outputs.
+        this.running = false;
+        // Declaring the size of the inputs and outputs.
         double[][][] trainingTestingData = this.prepareTrainingTestingDataSet();
         this.trainingInputs = trainingTestingData[0];
         this.trainingOutputs = trainingTestingData[1];
-        testingInputs = trainingTestingData[2];
-        testingOutputs = trainingTestingData[3];
-
-        this.mnistTestingJPanel = new MNISTTestingJPanel(this.w / 2, this.h);
-        this.mnistNetworkJPanel = new MNISTNetworkJPanel(this.w / 2, this.h);
-
-        add(this.mnistNetworkJPanel, BorderLayout.EAST);
-        add(this.mnistTestingJPanel, BorderLayout.WEST);
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                super.keyPressed(e);
-                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) running = false;
-                if (e.getKeyCode() == KeyEvent.VK_T) triggerNetworkTraining();
-                if (e.getKeyCode() == KeyEvent.VK_C) clearGridData();
-                if (e.getKeyCode() == KeyEvent.VK_R) restartNetwork();
-            }
+        this.testingInputs = trainingTestingData[2];
+        this.testingOutputs = trainingTestingData[3];
+        this.restartNetwork();
+        this.saveNeuralNetworkDialog = new SaveNeuralNetworkDialog(this, this::saveJNeuralNetwork);
+        saveNeuralNetworkDialog.setLocationRelativeTo(this);
+        this.mnistDrawningJPanel = new MNISTDrawningJPanel(this.w / 2, this.h);
+        this.mnistNetworkOutputJPanel = new MNISTNetworkOutputJPanel(this.w / 2, this.h / 2);
+        MNISTNetworkSettingsJPanel mnistNetworkSettingsJPanel = new MNISTNetworkSettingsJPanel(this.w / 2, this.h / 2, _ -> {
+            clearGridData();
+            return null;
+        }, _ -> {
+            triggerNetworkTraining();
+            return null;
+        }, _ -> {
+            restartNetwork();
+            return null;
+        }, _ -> {
+            mnistNetworkOutputJPanel.triggerNetworkPrediction();
+            return null;
+        }, _ -> {
+            saveNeuralNetworkDialog.setVisible(true);
+            return null;
         });
+        JPanel leftPanel = new JPanel(new GridLayout(2, 1));
+        leftPanel.add(this.mnistNetworkOutputJPanel);
+        leftPanel.add(mnistNetworkSettingsJPanel);
+        add(leftPanel);
+        add(this.mnistDrawningJPanel);
+        //        addKeyListener(new KeyAdapter() {
+        //            @Override
+        //            public void keyPressed(KeyEvent e) {
+        //                super.keyPressed(e);
+        //                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+        //                    running = false;
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_T) {
+        //                    triggerNetworkTraining();
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_C) {
+        //                    clearGridData();
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_R) {
+        //                    restartNetwork();
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_UP) {
+        //                    jNeuralNetwork.setEpochCount(jNeuralNetwork.getEpochCount() + 1);
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_M) {
+        //                    printSingleTrainingEntry();
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_DOWN && jNeuralNetwork.getEpochCount() > 1) {
+        //                    jNeuralNetwork.setEpochCount(jNeuralNetwork.getEpochCount() - 1);
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_LEFT && jNeuralNetwork.getLearningRate() > 0.0) {
+        //                    jNeuralNetwork.setLearningRate(jNeuralNetwork.getLearningRate() - 0.0001);
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_RIGHT && jNeuralNetwork.getLearningRate() < 1.0) {
+        //                    jNeuralNetwork.setLearningRate(jNeuralNetwork.getLearningRate() + 0.0001);
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+        //                    trainNetwork = !trainNetwork;
+        //                }
+        //                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+        //                    mnistNetworkOutputJPanel.triggerNetworkPrediction();
+        //                }
+        //                if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_S) {
+        //                    saveNeuralNetworkDialog.setVisible(true);
+        //                }
+        //            }
+        //        });
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e) {
                 super.windowOpened(e);
-                System.out.println(frameName + " has started.");
+                System.out.println(frameName + "has started.");
             }
 
             @Override
@@ -81,33 +141,109 @@ public class MNISTFrame extends JFrame {
         return jNeuralNetwork.processInputs(inputs);
     }
 
-    public static double[][] getDataGrid() {
+    public static int[][] getDataGrid() {
         return dataGrid;
     }
 
+    public static JNeuralNetwork getJNeuralNetwork() {
+        return jNeuralNetwork;
+    }
+
+    public static double getNetworkAccuracy() {
+        return networkAccuracy;
+    }
+
+    public static LossFunctionAble getNetworkLoss() {
+        return jNeuralNetwork.getLossFunctionable();
+    }
+
+    public static void setEpochCount(int epochCount) {
+        MNISTFrame.epochCount = epochCount;
+    }
+
+    public static int getTrainingEpochs() {
+        return epochCount;
+    }
+
+    public static double getLearningRate() {
+        return jNeuralNetwork.getLearningRate();
+    }
+
+    public static JNeuralNetworkOptimizer getJNeuralNetworkOptimizer() {
+        return jNeuralNetwork.getjNeuralNetworkOptimizer();
+    }
+
+    public static Boolean getTrainNetworkStatus() {
+        return autoTrainNetwork;
+    }
+
+    public static void setAutoTrainingMode(Boolean autoTrainNetwork) {
+        MNISTFrame.autoTrainNetwork = autoTrainNetwork;
+    }
+
     private void restartNetwork() {
-        jNeuralNetwork = new JNeuralNetwork(
-                LossFunction.MEAN_SQUARED_ERROR,
-                JNeuralNetworkOptimizer.RMS_PROP,
-                28 * 28,
-                networkLayers
+        System.out.println("A new network for training MNISt haas been pre-paired.");
+        networkDenseLayers = new DenseLayer[] { // Layer arrays.
+                //                new Layer(256, ActivationFunction.RE_LU), // ReLu layer
+                new DenseLayer(128, ActivationFunction.RE_LU), // ReLu layer
+                new DenseLayer(10, ActivationFunction.SOFTMAX), // Sigmoid layer
+        };
+        jNeuralNetwork = new JNeuralNetwork( // Neural Network.
+                LossFunction.MEAN_SQUARED_ERROR,//Loss Function
+                JNeuralNetworkOptimizer.ADAM, // Optimizer
+                28 * 28, // Input nodes
+                networkDenseLayers // Network Layers.
         );
         jNeuralNetwork.setLearningRate(0.001);
-        jNeuralNetwork.setMomentumFactorBeta1(0.9);
-        jNeuralNetwork.setMomentumFactorBeta1(0.998);
+        jNeuralNetwork.setMomentumFactorBeta1(0.99);
         jNeuralNetwork.setDebugMode(true);
     }
 
-    public void startRendering() {
+    private SaveStatus saveJNeuralNetwork(String fileName) {
+        System.out.println("Neural network is being saved...");
+        try {
+            String resourcePath = System.getProperty("user.dir") + "//src//main//resources//com//mkproductions//" + fileName + ".json";
+            File file = new File(resourcePath);
+            if (file.exists()) {
+                int choice = JOptionPane.showConfirmDialog(this, "File already exists. Do you want to overwrite it?", "File Exists", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+                if (choice != JOptionPane.YES_OPTION) {
+                    return SaveStatus.FILE_EXISTS;
+                }
+            }
+
+            Gson gson = new GsonBuilder().setExclusionStrategies(new ExclusionStrategy() {
+                @Override
+                public boolean shouldSkipField(FieldAttributes fieldAttributes) {
+                    return fieldAttributes.getDeclaredType().equals(Random.class);
+                }
+
+                @Override
+                public boolean shouldSkipClass(Class<?> aClass) {
+                    return false;
+                }
+            }).create();
+            FileWriter writer = new FileWriter(resourcePath);
+            gson.toJson(jNeuralNetwork, writer);
+            writer.flush();
+            writer.close();
+            System.out.println("Neural network saved successfully!");
+            return SaveStatus.SAVED;
+        } catch (IOException e) {
+            System.out.println("Error saving neural network: " + e.getMessage());
+            return SaveStatus.FAILED;
+        }
+    }
+
+    public void startRendering() throws InterruptedException {
         this.running = true;
         while (this.running) {
-            this.mnistTestingJPanel.repaint();
-            this.mnistNetworkJPanel.repaint();
-            try {
-                Thread.sleep(1000 / 60);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+            this.mnistDrawningJPanel.repaint();
+            this.mnistNetworkOutputJPanel.repaint();
+            if (networkAccuracy > 0.0 && networkAccuracy <= 98 && autoTrainNetwork) {
+                triggerNetworkTraining();
             }
+            Thread.sleep(16);
         }
         dispose();
         System.exit(-200);
@@ -128,40 +264,45 @@ public class MNISTFrame extends JFrame {
         List<List<Double>> csvTestingDataTable = csvTestingDataBufferedReader.getTable();
         var csvTestingOutputColumn = csvTestingDataBufferedReader.getColumn("label");
 
-        double[][] trainingInputs = new double[csvTrainingDataTable.size()][csvTrainingDataTable.get(0).size()];
+        double[][] trainingInputs = new double[csvTrainingDataTable.size()][csvTrainingDataTable.getFirst().size()];
         double[][] trainingOutputs = new double[csvTrainingOutputColumn.size()][10];
-        double[][] testingInputs = new double[csvTestingDataTable.size()][csvTestingDataTable.get(0).size()];
+        double[][] testingInputs = new double[csvTestingDataTable.size()][csvTestingDataTable.getFirst().size()];
         double[][] testingOutputs = new double[csvTestingOutputColumn.size()][10];
 
         // For filtering training data.
         for (int a = 0; a < trainingInputs.length; a++) {
             for (int b = 0; b < trainingInputs[0].length; b++) {
                 double value = csvTrainingDataTable.get(a).get(b);
-                trainingInputs[a][b] = value;//Mapper.mapRangeToRange(value, 0, 255, 0, 1);
+                trainingInputs[a][b] = value / 255;//Mapper.mapRangeToRange(value, 0, 255, 0, 1);
             }
         }
+        //        for (double[] rows : trainingInputs) {
+        //            System.out.println(STR."Row: \{Arrays.toString(rows)}");
+        //        }
         // Converting training outputs into raw arrays.
         for (int a = 0; a < trainingOutputs.length; a++) {
-            trainingOutputs[a][0] = csvTrainingOutputColumn.get(a);
+            trainingOutputs[a][csvTrainingOutputColumn.get(a)] = 1.0;
+            //            System.out.println(STR."Index: \{csvTrainingOutputColumn.get(a)}");
         }
         // For filtering testing data.
         for (int a = 0; a < testingInputs.length; a++) {
             for (int b = 0; b < testingInputs[0].length; b++) {
-                testingInputs[a][b] = csvTestingDataTable.get(a).get(b); //Mapper.mapRangeToRange(csvTestingDataTable.get(a).get(b), 0, 255, 0, 1);
+                double value = csvTestingDataTable.get(a).get(b); //Mapper.mapRangeToRange(csvTestingDataTable.get(a).get(b), 0, 255, 0, 1);
+                testingInputs[a][b] = value / 255;
             }
         }
         // Converting testing outputs into raw outputs.
         for (int a = 0; a < testingOutputs.length; a++) {
-            testingOutputs[a][0] = csvTestingOutputColumn.get(a);
+            testingOutputs[a][csvTestingOutputColumn.get(a)] = 1.0;
         }
         System.out.println("Thanks for waiting!!!");
-        return new double[][][]{trainingInputs, trainingOutputs, testingInputs, testingOutputs,};
+        return new double[][][] { trainingInputs, trainingOutputs, testingInputs, testingOutputs };
     }
 
     void triggerNetworkTraining() {
-        int epochs = 10;
-        MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochs);
-        networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(MNISTFrame.testingInputs, MNISTFrame.testingOutputs);
+        MNISTFrame.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, epochCount);
+        networkAccuracy = MNISTFrame.jNeuralNetwork.calculateAccuracy(this.testingInputs, this.testingOutputs);
+        mnistNetworkOutputJPanel.triggerNetworkPrediction();
     }
 
     public void clearGridData() {
@@ -170,5 +311,37 @@ public class MNISTFrame extends JFrame {
                 dataGrid[a][b] = 0;
             }
         }
+    }
+
+    private void printSingleTrainingEntry() {
+        //        var random = new Random();
+        int randomIndex = 0; //random.nextInt(this.trainingInputs.length);
+        double[] trainingInput = trainingInputs[randomIndex];
+        double[] trainingOutput = trainingOutputs[randomIndex];
+        int index = 0;
+        // Printing as console image.
+        for (int a = 0; a < 28; a++) {
+            for (int b = 0; b < 28; b++) {
+                double input = trainingInput[index++];
+                System.out.print(input == 0 ? "_" : "#");
+            }
+            System.out.println();
+        }
+        // Printing as core values.
+        index = 0;
+        for (int a = 0; a < 28; a++) {
+            for (int b = 0; b < 28; b++) {
+                double input = trainingInput[index];
+                System.out.print(input);
+                if (index != (28 * 28) - 1) {
+                    System.out.print(",");
+                }
+                index++;
+            }
+            System.out.println();
+        }
+        System.out.println("Label: " + Arrays.toString(trainingOutput));
+        double[] prediction = jNeuralNetwork.processInputs(trainingInput);
+        System.out.println("Prediction: " + Arrays.toString(prediction));
     }
 }

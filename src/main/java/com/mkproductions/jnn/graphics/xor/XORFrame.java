@@ -4,8 +4,8 @@ import javax.swing.*;
 import java.awt.event.*;
 
 public class XORFrame extends JFrame {
-    final int w = 560;
-    final int h = 560;
+    final int w = 700;
+    final int h = 700;
     public static int mouseX;
     public static int mouseY;
     private final XORWindowPanel windowPanel;
@@ -37,6 +37,7 @@ public class XORFrame extends JFrame {
                     case KeyEvent.VK_DOWN -> {
                         if (windowPanel.getCellCount() >= 1) windowPanel.setCellCount(windowPanel.getCellCount() - 10);
                     }
+                    case KeyEvent.VK_ENTER -> windowPanel.printAccuracy();
                     case KeyEvent.VK_SPACE -> running = false;
                 }
             }

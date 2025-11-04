@@ -7,12 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class CSVBufferedReader {
-    private final String filePath;
-
-    public CSVBufferedReader(String filePath) {
-        this.filePath = filePath;
-    }
+public record CSVBufferedReader(String filePath) {
 
     public int getRowCount() {
         int rowCount;
@@ -51,7 +46,7 @@ public class CSVBufferedReader {
                 String[] column = row.split(",");
                 var value = Integer.parseInt(column[labelIndex]);
                 columnEntries.add(value);
-                System.out.println(value);
+//                System.out.println(value);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -73,7 +68,7 @@ public class CSVBufferedReader {
                     floatRow.add(Double.parseDouble(stringRow.get(a)));
                 }
                 csvTable.add(floatRow);
-                System.out.println("Row: " + Arrays.toString(floatRow.toArray()));
+//                System.out.println(STR."Row: \{Arrays.toString(floatRow.toArray())}");
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

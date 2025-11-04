@@ -14,7 +14,7 @@ public class TaskGraphMatrixSolver {
 
     public static void solveAddition(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix1, Matrix2DDouble matrix2, Matrix2DDouble result) {
         if (matrix1.getNumRows() != matrix2.getNumRows() || matrix1.getNumColumns() != matrix2.getNumColumns() || matrix1.getNumRows() != result.getNumRows() || matrix1.getNumColumns() != result.getNumColumns()) {
-            throw new RuntimeException("Matrices does not have the same number of rows and columns for performing addition.");
+            throw new IllegalArgumentException("Matrices does not have the same number of rows and columns for performing addition.");
         }
         taskGraph.task(taskID, MatrixOperationSolver::solveAddition, matrix1, matrix2, result);
     }
@@ -25,7 +25,7 @@ public class TaskGraphMatrixSolver {
 
     public static void solveSubtraction(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix1, Matrix2DDouble matrix2, Matrix2DDouble result) {
         if (matrix1.getNumRows() != matrix2.getNumRows() || matrix1.getNumColumns() != matrix2.getNumColumns() || matrix1.getNumRows() != result.getNumRows() || matrix1.getNumColumns() != result.getNumColumns()) {
-            throw new RuntimeException("Matrices does not have the same number of rows and columns for performing subtraction.");
+            throw new IllegalArgumentException("Matrices does not have the same number of rows and columns for performing subtraction.");
         }
         taskGraph.task(taskID, MatrixOperationSolver::solveSubtraction, matrix1, matrix2, result);
     }
@@ -44,10 +44,10 @@ public class TaskGraphMatrixSolver {
 
     public static void solveElementWiseMultiplication(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix1, Matrix2DDouble matrix2, Matrix2DDouble result) {
         if (matrix1.getNumRows() != matrix2.getNumRows() || matrix1.getNumColumns() != matrix2.getNumColumns() || matrix1.getNumRows() != result.getNumRows() || matrix1.getNumColumns() != result.getNumColumns()) {
-            System.err.println(STR."Matrix1: \{matrix1}");
-            System.err.println(STR."Matrix2: \{matrix2}");
-            System.err.println(STR."Result: \{result}");
-            throw new RuntimeException("Matrices does not have the same number of rows and columns for performing element wise multiplication.");
+            System.err.println("Matrix1:" + matrix1);
+            System.err.println("Matrix2: " + matrix2);
+            System.err.println("Result: " + result);
+            throw new IllegalArgumentException("Matrices does not have the same number of rows and columns for performing element wise multiplication.");
         }
         taskGraph.task(taskID, MatrixOperationSolver::solveElementWiseMultiplication, matrix1, matrix2, result);
     }
@@ -60,7 +60,7 @@ public class TaskGraphMatrixSolver {
             System.out.println(matrix2);
             System.err.println("Result");
             System.out.println(result);
-            throw new RuntimeException(STR."Given matrices does validates the matrix multiplication criteria.\{matrix1.getNumColumns()} != \{matrix2.getNumRows()}.");
+            throw new IllegalArgumentException("Given matrices does validates the matrix multiplication criteria." + matrix1.getNumColumns() + " != " + matrix2.getNumRows());
         }
         taskGraph.task(taskID, MatrixOperationSolver::solveMatrixMultiplication, matrix1, matrix2, result);
     }
@@ -75,8 +75,8 @@ public class TaskGraphMatrixSolver {
 
     public static void transpose(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix, Matrix2DDouble result) {
         if (matrix.getNumRows() != result.getNumColumns() || matrix.getNumColumns() != result.getNumRows()) {
-            System.err.println(STR."\{matrix} && \{result}");
-            throw new RuntimeException("Given result matrix does not have proper dimension.");
+            System.err.println(matrix + " && " + result);
+            throw new IllegalArgumentException("Given result matrix does not have proper dimension.");
         }
         taskGraph.task(taskID, MatrixOperationSolver::transpose, matrix, result);
     }
@@ -107,12 +107,11 @@ public class TaskGraphMatrixSolver {
         }
     }
 
-    public static void calculateLossDerivative(TaskGraph taskGraph, String taskID, Matrix2DDouble prediction, Matrix2DDouble target, Matrix2DDouble result,
-            LossFunction lossFunction) {
+    public static void calculateLossDerivative(TaskGraph taskGraph, String taskID, Matrix2DDouble prediction, Matrix2DDouble target, Matrix2DDouble result, LossFunction lossFunction) {
         if (prediction.getNumRows() != target.getNumRows() || prediction.getNumColumns() != target.getNumColumns()) {
-            System.err.println(STR."Prediction: \{prediction}");
-            System.err.println(STR."Target: \{target}");
-            throw new RuntimeException("Unable to calculate the loss function derivative of the given matrices.");
+            System.err.println("Prediction: " + prediction);
+            System.err.println("Target: " + target);
+            throw new IllegalArgumentException("Unable to calculate the loss function derivative of the given matrices.");
         }
         switch (lossFunction) {
             case MEAN_ABSOLUTE_ERROR -> taskGraph.task(taskID, LossFunctionSolver::applyLossFunctionDerivativeMSE, prediction, target, result);
@@ -195,4 +194,3 @@ public class TaskGraphMatrixSolver {
         return (seed & 0x0FFFFFFF) / 268435455f;
     }
 }
-

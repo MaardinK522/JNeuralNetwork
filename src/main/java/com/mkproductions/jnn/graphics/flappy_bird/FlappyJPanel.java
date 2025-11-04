@@ -1,7 +1,7 @@
 package com.mkproductions.jnn.graphics.flappy_bird;
 
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
-import com.mkproductions.jnn.cpu.entity.Layer;
+import com.mkproductions.jnn.cpu.layers.DenseLayer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -111,8 +111,8 @@ public class FlappyJPanel extends JPanel {
         this.birds.clear();
         Object[] networkParameters = {
                 10,
-                new Layer(16, ActivationFunction.SIGMOID),
-                new Layer(2, ActivationFunction.SIGMOID)
+                new DenseLayer(16, ActivationFunction.SIGMOID),
+                new DenseLayer(2, ActivationFunction.SIGMOID)
         };
 //        this.birds.addAll(this.birdsGeneticAlgorithm.getRandomGeneration(networkParameters));
         this.aliveBirds = this.birdsCount;

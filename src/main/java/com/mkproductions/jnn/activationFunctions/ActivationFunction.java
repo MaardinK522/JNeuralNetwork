@@ -1,6 +1,6 @@
 package com.mkproductions.jnn.activationFunctions;
 
-import com.mkproductions.jnn.cpu.entity.MapAble;
+import com.mkproductions.jnn.cpu.entity.MatrixFunctionAble;
 
 public enum ActivationFunction {
     SIGMOID("sigmoid", (_, _, x) -> 1.0 / (1 + Math.exp(-x)), (_, _, y) -> y * (1 - y)), // Sigmoid activation function with derivative.
@@ -10,10 +10,10 @@ public enum ActivationFunction {
     SOFTMAX("softmax", ((_, _, _) -> 0.0F), (_, _, _) -> 0.0F), // Soft max activation without function or derivative.
     ;
     final String activationFunctionName;
-    final public MapAble equation;
-    final public MapAble derivative;
+    final public MatrixFunctionAble equation;
+    final public MatrixFunctionAble derivative;
 
-    ActivationFunction(String activationFunctionName, MapAble equation, MapAble derivative) {
+    ActivationFunction(String activationFunctionName, MatrixFunctionAble equation, MatrixFunctionAble derivative) {
         this.activationFunctionName = activationFunctionName;
         this.equation = equation;
         this.derivative = derivative;
