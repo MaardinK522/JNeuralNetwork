@@ -1,6 +1,6 @@
 package com.mkproductions.jnn.graphics.training_view;
 
-import com.mkproductions.jnn.network.JNeuralNetwork;
+import com.mkproductions.jnn.networks.JNeuralNetwork;
 
 import javax.swing.*;
 import java.awt.*;

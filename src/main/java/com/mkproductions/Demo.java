@@ -5,7 +5,7 @@ import com.mkproductions.jnn.gpu.entity.NetworkLayer;
 
 import com.mkproductions.jnn.gpu.solver.ActivationFunctionSolver;
 import com.mkproductions.jnn.gpu.TaskGraphMatrixSolver;
-import com.mkproductions.jnn.network.JGPUNeuralNetwork;
+import com.mkproductions.jnn.networks.JGPUNeuralNetwork;
 import org.jetbrains.annotations.NotNull;
 import uk.ac.manchester.tornado.api.*;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;

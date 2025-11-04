@@ -1,4 +1,4 @@
-package com.mkproductions.jnn.network;
+package com.mkproductions.jnn.networks;
 
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.gpu.entity.NetworkLayer;

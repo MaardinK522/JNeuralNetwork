@@ -10,7 +10,7 @@ import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
-import com.mkproductions.jnn.network.JNeuralNetwork;
+import com.mkproductions.jnn.networks.JNeuralNetwork;
 
 import javax.swing.*;
 import java.awt.*;

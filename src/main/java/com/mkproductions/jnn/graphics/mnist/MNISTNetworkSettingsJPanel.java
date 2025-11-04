@@ -1,7 +1,7 @@
 package com.mkproductions.jnn.graphics.mnist;
 
 import com.mkproductions.jnn.lossFunctions.LossFunction;
-import com.mkproductions.jnn.network.JNeuralNetwork;
+import com.mkproductions.jnn.networks.JNeuralNetwork;
 import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
 
 import javax.swing.*;

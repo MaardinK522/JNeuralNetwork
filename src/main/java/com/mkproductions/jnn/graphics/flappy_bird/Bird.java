@@ -1,7 +1,7 @@
 package com.mkproductions.jnn.graphics.flappy_bird;
 
-import com.mkproductions.jnn.network.GeneticAlgorithm;
-import com.mkproductions.jnn.network.JNeuralNetwork;
+import com.mkproductions.jnn.networks.GeneticAlgorithm;
+import com.mkproductions.jnn.networks.JNeuralNetwork;
 
 import java.awt.*;
 import java.util.Random;

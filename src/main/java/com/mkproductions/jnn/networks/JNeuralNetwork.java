@@ -1,4 +1,4 @@
-package com.mkproductions.jnn.network;
+package com.mkproductions.jnn.networks;
 
 import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.entity.LossFunctionAble;

@@ -7,7 +7,7 @@ import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
 import com.mkproductions.jnn.graphics.mnist.MNISTFrame;
 import com.mkproductions.jnn.graphics.training_view.NeuralNetworkTrainingViewerJFrame;
 import com.mkproductions.jnn.graphics.xor.XORFrame;
-import com.mkproductions.jnn.network.JNeuralNetwork;
+import com.mkproductions.jnn.networks.JNeuralNetwork;
 import org.jetbrains.annotations.NotNull;
 
 public class Main {

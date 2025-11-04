@@ -1,11 +1,10 @@
 package com.mkproductions.jnn.graphics.training_view;
 
-import com.mkproductions.jnn.network.JNeuralNetwork;
+import com.mkproductions.jnn.networks.JNeuralNetwork;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.sql.SQLOutput;
 
 public class NeuralNetworkTrainingViewerJFrame extends JFrame implements Runnable {
     private static final int FPS = 60;

@@ -1,4 +1,4 @@
-package com.mkproductions.jnn.network;
+package com.mkproductions.jnn.networks;
 
 import java.util.ArrayList;
 import java.util.HashSet;
