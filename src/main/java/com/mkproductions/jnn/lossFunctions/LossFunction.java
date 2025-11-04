@@ -7,7 +7,7 @@ public enum LossFunction implements LossFunctionAble {
     ABSOLUTE_ERROR {
         @Override
         public Matrix getLossFunctionMatrix(Matrix predictionMatrix, Matrix targetMatrix) {
-            if (predictionMatrix.getRow() != targetMatrix.getRow() || predictionMatrix.getColumnCount() != targetMatrix.getColumnCount()) {
+            if (predictionMatrix.getRowCount() != targetMatrix.getRowCount() || predictionMatrix.getColumnCount() != targetMatrix.getColumnCount()) {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Calculate the squared error for each element in the matrix.
@@ -16,7 +16,7 @@ public enum LossFunction implements LossFunctionAble {
 
         @Override
         public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
-            return Matrix.matrixMapping(new Matrix(prediction.getRow(), prediction.getColumnCount()), (row, column, _) -> {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
                 double error = target.getEntry(row, column) - prediction.getEntry(row, column);
                 return error >= 0 ? 1 : -1;
             });
@@ -26,11 +26,12 @@ public enum LossFunction implements LossFunctionAble {
         @Override
         public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
             // Ensure input matrices have the same dimensions
-            if (prediction.getRow() != target.getRow() || prediction.getColumnCount() != target.getColumnCount()) {
+            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Calculate the squared error for each element in the matrix
-            return Matrix.matrixMapping(new Matrix(prediction.getRow(), prediction.getColumnCount()), (row, column, _) -> Math.pow(prediction.getEntry(row, column) - target.getEntry(row, column), 2));
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()),
+                    (row, column, _) -> Math.pow(prediction.getEntry(row, column) - target.getEntry(row, column), 2));
         }
 
         @Override
@@ -42,12 +43,12 @@ public enum LossFunction implements LossFunctionAble {
         @Override
         public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
             // Ensure input matrices have the same dimensions
-            if (prediction.getRow() != target.getRow() || prediction.getColumnCount() != target.getColumnCount()) {
+            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
 
             // Calculate the absolute error for each element in the matrix
-            return Matrix.matrixMapping(new Matrix(prediction.getRow(), prediction.getColumnCount()), (row, column, _) -> {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
                 var error = prediction.getEntry(row, column) - target.getEntry(row, column);
                 return Math.abs(error);
             });
@@ -55,7 +56,7 @@ public enum LossFunction implements LossFunctionAble {
 
         @Override
         public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
-            return Matrix.matrixMapping(new Matrix(prediction.getRow(), prediction.getColumnCount()), (row, column, _) -> {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
                 double error = target.getEntry(row, column) - prediction.getEntry(row, column);
                 return error >= 0 ? 1 : -1;
             });
@@ -105,7 +106,7 @@ public enum LossFunction implements LossFunctionAble {
         @Override
         public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
             // ... (similar structure as other loss functions)
-            return Matrix.matrixMapping(new Matrix(prediction.getRow(), prediction.getColumnCount()), (row, column, _) -> {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
                 double error = -target.getEntry(row, column) + prediction.getEntry(row, column);
                 return Math.log(Math.cosh(error));
             });
@@ -113,7 +114,7 @@ public enum LossFunction implements LossFunctionAble {
 
         @Override
         public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
-            return Matrix.matrixMapping(new Matrix(prediction.getRow(), prediction.getColumnCount()), (row, column, _) -> {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
                 double error = -target.getEntry(row, column) + prediction.getEntry(row, column);
                 return -Math.tanh(error);
             });
@@ -123,11 +124,11 @@ public enum LossFunction implements LossFunctionAble {
         @Override
         public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
             // Check for dimension compatibility
-            if (prediction.getRow() != target.getRow() || prediction.getColumnCount() != target.getColumnCount()) {
+            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Calculate binary cross-entropy loss for each element
-            return Matrix.matrixMapping(new Matrix(prediction.getRow(), prediction.getColumnCount()), (row, column, _) -> {
+            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
                 double y = target.getEntry(row, column);
                 double p = prediction.getEntry(row, column);
                 // Clip probabilities to prevent log(0)
@@ -140,7 +141,7 @@ public enum LossFunction implements LossFunctionAble {
         @Override
         public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
             // Ensure input matrices have the same dimensions
-            if (prediction.getRow() != target.getRow() || prediction.getColumnCount() != target.getColumnCount()) {
+            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
 
@@ -152,7 +153,7 @@ public enum LossFunction implements LossFunctionAble {
         @Override
         public Matrix getLossFunctionMatrix(Matrix predictions, Matrix targets) {
             // Check for dimension compatibility
-            if (predictions.getRow() != targets.getRow() || predictions.getColumnCount() != targets.getColumnCount()) {
+            if (predictions.getRowCount() != targets.getRowCount() || predictions.getColumnCount() != targets.getColumnCount()) {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Clip predictions to prevent log(0)
@@ -163,9 +164,9 @@ public enum LossFunction implements LossFunctionAble {
 
         public Matrix getDerivativeMatrix(Matrix predictions, Matrix targets) {
             // Ensure input matrices have the same dimensions
-            if (predictions.getRow() != targets.getRow() || predictions.getColumnCount() != targets.getColumnCount()) {
-                System.err.println("Prediction: (" + predictions.getRow() + ", " + predictions.getColumnCount());
-                System.err.println("Target: (" + targets.getRow() + ", " + targets.getColumnCount());
+            if (predictions.getRowCount() != targets.getRowCount() || predictions.getColumnCount() != targets.getColumnCount()) {
+                System.err.println("Prediction: (" + predictions.getRowCount() + ", " + predictions.getColumnCount());
+                System.err.println("Target: (" + targets.getRowCount() + ", " + targets.getColumnCount());
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Calculate the derivative of categorical cross-entropy loss for each element

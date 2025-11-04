@@ -63,19 +63,19 @@ public class JNeuralNetwork implements Serializable {
                 this.weightsMatrices[layerIndex] = new Matrix(this.netWorkDenseLayers[layerIndex].numberOfNodes(), this.netWorkDenseLayers[layerIndex - 1].numberOfNodes());
             }
             this.outputMatrices[layerIndex] = new Matrix(this.netWorkDenseLayers[layerIndex].numberOfNodes(), 1);
-            this.biasesMatrices[layerIndex] = new Matrix(this.outputMatrices[layerIndex].getRow(), this.outputMatrices[layerIndex].getColumnCount());
+            this.biasesMatrices[layerIndex] = new Matrix(this.outputMatrices[layerIndex].getRowCount(), this.outputMatrices[layerIndex].getColumnCount());
 
             // Randomizing the weights and bias
             randomize(this.weightsMatrices[layerIndex]);
             randomize(this.biasesMatrices[layerIndex]);
             // Initializing the velocity matrices.
             if (this.jNeuralNetworkOptimizer != JNeuralNetworkOptimizer.SGD) {
-                this.velocityWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRow(), this.weightsMatrices[layerIndex].getColumnCount());
-                this.velocityBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRow(), this.biasesMatrices[layerIndex].getColumnCount());
+                this.velocityWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRowCount(), this.weightsMatrices[layerIndex].getColumnCount());
+                this.velocityBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRowCount(), this.biasesMatrices[layerIndex].getColumnCount());
             }
             if (this.jNeuralNetworkOptimizer == JNeuralNetworkOptimizer.ADAM) {
-                this.momentumWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRow(), this.weightsMatrices[layerIndex].getColumnCount());
-                this.momentumBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRow(), this.biasesMatrices[layerIndex].getColumnCount());
+                this.momentumWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRowCount(), this.weightsMatrices[layerIndex].getColumnCount());
+                this.momentumBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRowCount(), this.biasesMatrices[layerIndex].getColumnCount());
             }
         }
     }
@@ -466,7 +466,7 @@ public class JNeuralNetwork implements Serializable {
             Matrix eRasiedMatrix = Matrix.matrixMapping(matrix, (a, b, value) -> Math.exp(matrix.getEntry(a, b)));
             //            System.out.println("Printing powered by e matrix: ");
             //            eRasiedMatrix.printMatrix();
-            double sum = IntStream.range(0, eRasiedMatrix.getRow()).mapToDouble(a -> eRasiedMatrix.getEntry(a, 0)).sum();
+            double sum = IntStream.range(0, eRasiedMatrix.getRowCount()).mapToDouble(a -> eRasiedMatrix.getEntry(a, 0)).sum();
             Matrix result = Matrix.matrixMapping(eRasiedMatrix, (a, b, value) -> eRasiedMatrix.getEntry(a, b) / sum);
             //            System.out.println("After getting averaged by the sum: ");
             //            result.printMatrix();
@@ -477,10 +477,10 @@ public class JNeuralNetwork implements Serializable {
 
     public static Matrix getDactivatedActivationFunctionMatrix(Matrix activatedMatrix, @NotNull ActivationFunction activationFunction) {
         if (activationFunction.name().equals(ActivationFunction.SOFTMAX.name())) {
-            if (activatedMatrix.getRow() != 1 && activatedMatrix.getColumnCount() != 1) {
+            if (activatedMatrix.getRowCount() != 1 && activatedMatrix.getColumnCount() != 1) {
                 throw new IllegalArgumentException("Softmax derivative expects a single vector output.");
             }
-            int n = Math.max(activatedMatrix.getRow(), activatedMatrix.getColumnCount());
+            int n = Math.max(activatedMatrix.getRowCount(), activatedMatrix.getColumnCount());
             double[] values = Matrix.toFlatArray(activatedMatrix);
             return Matrix.matrixMapping(new Matrix(n, n), (a, b, value) -> {
                 if (a == b) {
@@ -557,7 +557,7 @@ public class JNeuralNetwork implements Serializable {
 
     private void randomize(@NotNull Matrix matrix2DDouble) {
         double stdDev = Math.sqrt(2.0 / matrix2DDouble.getColumnCount());
-        for (int a = 0; a < matrix2DDouble.getRow(); a++) {
+        for (int a = 0; a < matrix2DDouble.getRowCount(); a++) {
             for (int i = 0; i < matrix2DDouble.getColumnCount(); i++) {
                 double u1 = random.nextDouble();
                 double u2 = random.nextDouble();

@@ -1,8 +1,6 @@
 package com.mkproductions.jnn.activationFunctions;
 
-import com.mkproductions.jnn.cpu.entity.Matrix3D;
 import com.mkproductions.jnn.cpu.entity.Matrix3DFunctionAble;
-import com.mkproductions.jnn.cpu.entity.MatrixFunctionAble;
 
 public enum ActivationFunction3D {
     SIGMOID("sigmoid", (_, _, _, x) -> 1.0 / (1 + Math.exp(-x)), (_, _, _, y) -> y * (1 - y)), // Sigmoid activation function with derivative.
