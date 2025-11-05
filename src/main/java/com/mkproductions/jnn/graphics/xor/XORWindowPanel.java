@@ -31,7 +31,7 @@ public class XORWindowPanel extends JPanel {
         setSize(width, height);
         setVisible(true);
         setBackground(Color.black);
-        this.jNeuralNetwork.setLearningRate(0.0001);
+        this.jNeuralNetwork.setLearningRate(0.01);
     }
 
     @Override

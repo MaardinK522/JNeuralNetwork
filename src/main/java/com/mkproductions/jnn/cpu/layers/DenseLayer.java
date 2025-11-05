@@ -2,14 +2,20 @@ package com.mkproductions.jnn.cpu.layers;
 
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 
-public record DenseLayer(int numberOfNodes, ActivationFunction activationFunction) implements Layer {
-    @Override
-    public String toString() {
-        return "Layer{numberOfNodes=" + numberOfNodes + ", activationFunction=" + activationFunction + "}";
+public class DenseLayer extends Layer {
+    private final int numberOfNodes;
+
+    public DenseLayer(int numberOfNodes, ActivationFunction activation) {
+        super(activation);
+        this.numberOfNodes = numberOfNodes;
     }
 
     @Override
-    public void printLayerInfo() {
-        System.out.println(this);
+    public String toString() {
+        return STR."Layer{numberOfNodes=\{numberOfNodes}, activationFunction=\{getActivationFunction()}}";
+    }
+
+    public int getNumberOfNodes() {
+        return this.numberOfNodes;
     }
 }

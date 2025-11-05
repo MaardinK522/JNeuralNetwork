@@ -1,13 +1,25 @@
 package com.mkproductions.jnn.cpu.layers;
 
-public record PoolingLayer(int poolSize, int stride) implements Layer {
-    @Override
-    public String toString() {
-        return "PoolingLayer{" + "poolSize=" + poolSize + ", stride=" + stride + '}';
+import com.mkproductions.jnn.activationFunctions.ActivationFunction;
+
+public class PoolingLayer extends Layer {
+    private int poolSize;
+    private int stride;
+
+    public PoolingLayer(ActivationFunction activation) {
+        super(activation);
     }
 
     @Override
-    public void printLayerInfo() {
-        System.out.println(this);
+    public String toString() {
+        return STR."PoolingLayer{poolSize=\{poolSize}, stride=\{stride}}";
+    }
+
+    public int getPoolSize() {
+        return poolSize;
+    }
+
+    public int getStride() {
+        return stride;
     }
 }

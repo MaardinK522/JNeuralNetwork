@@ -1,6 +1,5 @@
 package com.mkproductions;
 
-import com.mkproductions.jnn.cpu.entity.Matrix;
 import com.mkproductions.jnn.cpu.entity.Tensor;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.gpu.entity.NetworkLayer;
@@ -33,18 +32,9 @@ public class Demo {
     private static void testingTensorOperations() {
         Tensor tensor1 = new Tensor(1, 3);
         Tensor tensor2 = new Tensor(3, 2);
-        tensor1.mapTensor((value -> 2.0));
-        tensor2.mapTensor((value -> 2.0));
-        try {
-            System.out.println(Tensor.matrixMultiplication(tensor1, tensor2));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        Matrix mat1 = new Matrix(1, 3);
-        Matrix mat2 = new Matrix(3, 2);
-        mat1.matrixMapping((_, _, value) -> 2.0);
-        mat2.matrixMapping((_, _, value) -> 2.0);
-        System.out.println(Matrix.matrixMultiplication(mat1, mat2));
+        tensor1.mapTensor(((flatIndex, value) -> 2.0));
+        tensor2.mapTensor(((flatIndex, value) -> 2.0));
+        System.out.println(Tensor.matrixMultiplication(tensor1, tensor2));
     }
 
     private static void testingInterfaceFunctions() {

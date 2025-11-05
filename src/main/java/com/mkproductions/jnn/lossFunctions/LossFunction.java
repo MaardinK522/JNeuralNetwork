@@ -1,63 +1,58 @@
 package com.mkproductions.jnn.lossFunctions;
 
 import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
-import com.mkproductions.jnn.cpu.entity.Matrix;
+import com.mkproductions.jnn.cpu.entity.Tensor;
 
 public enum LossFunction implements LossFunctionAble {
     ABSOLUTE_ERROR {
         @Override
-        public Matrix getLossFunctionMatrix(Matrix predictionMatrix, Matrix targetMatrix) {
-            if (predictionMatrix.getRowCount() != targetMatrix.getRowCount() || predictionMatrix.getColumnCount() != targetMatrix.getColumnCount()) {
-                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-            }
+        public Tensor getLossFunctionTensor(Tensor predictionTensor, Tensor targetMatrix) {
+            Tensor.validateTensors(predictionTensor, targetMatrix);
             // Calculate the squared error for each element in the matrix.
-            return Matrix.matrixMapping(predictionMatrix, (row, column, prediction) -> (targetMatrix.getEntry(row, column) - prediction));
+            return Tensor.tensorMapping(predictionTensor, (flatIndex, prediction) -> (targetMatrix.getData()[flatIndex] - prediction));
         }
 
         @Override
-        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
-                double error = target.getEntry(row, column) - prediction.getEntry(row, column);
+        public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
+            Tensor.validateTensors(prediction, target);
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
+                double error = target.getData()[flatIndex] - prediction.getData()[flatIndex];
                 return error >= 0 ? 1 : -1;
             });
         }
     }, // Absolute Error
     MEAN_SQUARED_ERROR {
         @Override
-        public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
+        public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
             // Ensure input matrices have the same dimensions
-            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
-                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-            }
+            Tensor.validateTensors(prediction, target);
             // Calculate the squared error for each element in the matrix
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()),
-                    (row, column, _) -> Math.pow(prediction.getEntry(row, column) - target.getEntry(row, column), 2));
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> Math.pow(prediction.getData()[flatIndex] - target.getData()[flatIndex], 2));
         }
 
         @Override
-        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
-            return Matrix.matrixMapping(new Matrix(prediction.data), ((row, column, _) -> -2 * (prediction.getEntry(row, column) - target.getEntry(row, column))));
+        public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
+            Tensor.validateTensors(prediction, target);
+            return Tensor.tensorMapping(prediction, ((flatIndex, _) -> -2 * (prediction.getData()[flatIndex] - target.getData()[flatIndex])));
         }
     }, // Mean squared error
     MEAN_ABSOLUTE_ERROR {
         @Override
-        public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
+        public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
             // Ensure input matrices have the same dimensions
-            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
-                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-            }
-
+            Tensor.validateTensors(prediction, target);
             // Calculate the absolute error for each element in the matrix
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
-                var error = prediction.getEntry(row, column) - target.getEntry(row, column);
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
+                var error = prediction.getData()[flatIndex] - target.getData()[flatIndex];
                 return Math.abs(error);
             });
         }
 
         @Override
-        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
-                double error = target.getEntry(row, column) - prediction.getEntry(row, column);
+        public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
+            Tensor.validateTensors(prediction, target);
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
+                double error = target.getData()[flatIndex] - prediction.getData()[flatIndex];
                 return error >= 0 ? 1 : -1;
             });
         }
@@ -65,15 +60,15 @@ public enum LossFunction implements LossFunctionAble {
     // TODO: Implement this loss function with the proper derivative.
     //    SMOOTH_MEAN_ABSOLUTE_ERROR {
     //        @Override
-    //        public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
+    //        public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
     //            // Ensure input matrices have the same dimensions
     //            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
     //                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
     //            }
     //
-    //            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, value) -> {
-    //                double actual = target.getEntry(row, column);
-    //                double forecast = prediction.getEntry(row, column);
+    //            return Tensor.matrixMapping(new Tensor(prediction.getRowCount(), prediction.getColumnCount()), (FlatIndex, column, value) -> {
+    //                double actual = target.getEntry(FlatIndex, column);
+    //                double forecast = prediction.getEntry(FlatIndex, column);
     //                double absDiff = Math.abs(forecast - actual);
     //                double absSum = Math.abs(actual) + Math.abs(forecast);
     //                return absSum == 0 ? 0 : (2 * absDiff) / (absSum * absSum);
@@ -90,9 +85,9 @@ public enum LossFunction implements LossFunctionAble {
     //
     //
     //        @Override
-    //        public Matrix getDerivativeMatrix(Matrix predictions, Matrix targets) {
-    //            return Matrix.matrixMapping(new Matrix(predictions.getRowCount(), predictions.getColumnCount()), (row, column, prediction) -> {
-    //                double target = targets.getEntry(row, column);
+    //        public Tensor getDerivativeTensor(Tensor predictions, Tensor targets) {
+    //            return Tensor.matrixMapping(new Tensor(predictions.getRowCount(), predictions.getColumnCount()), (FlatIndex, column, prediction) -> {
+    //                double target = targets.getEntry(FlatIndex, column);
     //                double diff = target - prediction;
     //                double absDiff = Math.abs(diff);
     //                double absTarget = Math.abs(target);
@@ -104,33 +99,33 @@ public enum LossFunction implements LossFunctionAble {
     //    },
     LOG_COSH {
         @Override
-        public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
+        public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
+            Tensor.validateTensors(prediction, target);
             // ... (similar structure as other loss functions)
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
-                double error = -target.getEntry(row, column) + prediction.getEntry(row, column);
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
+                double error = -target.getData()[flatIndex] + prediction.getData()[flatIndex];
                 return Math.log(Math.cosh(error));
             });
         }
 
         @Override
-        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
-                double error = -target.getEntry(row, column) + prediction.getEntry(row, column);
+        public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
+            Tensor.validateTensors(prediction, target);
+            return Tensor.tensorMapping(prediction, (FlatIndex, _) -> {
+                double error = -target.getData()[FlatIndex] + prediction.getData()[FlatIndex];
                 return -Math.tanh(error);
             });
         }
     }, // Log(cosh(x)
     BINARY_CROSS_ENTROPY {
         @Override
-        public Matrix getLossFunctionMatrix(Matrix prediction, Matrix target) {
+        public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
             // Check for dimension compatibility
-            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
-                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-            }
+            Tensor.validateTensors(prediction, target);
             // Calculate binary cross-entropy loss for each element
-            return Matrix.matrixMapping(new Matrix(prediction.getRowCount(), prediction.getColumnCount()), (row, column, _) -> {
-                double y = target.getEntry(row, column);
-                double p = prediction.getEntry(row, column);
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
+                double y = target.getData()[flatIndex];
+                double p = prediction.getData()[flatIndex];
                 // Clip probabilities to prevent log(0)
                 p = Math.max(p, 1e-15);
                 p = Math.min(p, 1 - 1e-15);
@@ -139,73 +134,65 @@ public enum LossFunction implements LossFunctionAble {
         }
 
         @Override
-        public Matrix getDerivativeMatrix(Matrix prediction, Matrix target) {
+        public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
             // Ensure input matrices have the same dimensions
-            if (prediction.getRowCount() != target.getRowCount() || prediction.getColumnCount() != target.getColumnCount()) {
-                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-            }
+            Tensor.validateTensors(prediction, target);
 
             // Calculate the derivative of binary cross-entropy loss for each element
-            return Matrix.matrixMapping(prediction, (row, column, _) -> (target.getEntry(row, column) - prediction.getEntry(row, column)));
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> (target.getData()[flatIndex] - prediction.getData()[flatIndex]));
         }
     }, // Binary Cross Entropy
     CATEGORICAL_CROSS_ENTROPY {
         @Override
-        public Matrix getLossFunctionMatrix(Matrix predictions, Matrix targets) {
+        public Tensor getLossFunctionTensor(Tensor predictions, Tensor targets) {
             // Check for dimension compatibility
-            if (predictions.getRowCount() != targets.getRowCount() || predictions.getColumnCount() != targets.getColumnCount()) {
-                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-            }
+            Tensor.validateTensors(predictions, targets);
             // Clip predictions to prevent log(0)
-            predictions = Matrix.clip(predictions, 1e-15, 1 - 1e-15);
+            predictions = Tensor.clip(predictions, 1e-15, 1 - 1e-15);
             // Calculate categorical cross-entropy loss for each element
-            return Matrix.matrixMapping(predictions, (row, column, value) -> targets.getEntry(row, column) * Math.log(value));
+            return Tensor.tensorMapping(predictions, (flatIndex, value) -> targets.getData()[flatIndex] * Math.log(value));
         }
 
-        public Matrix getDerivativeMatrix(Matrix predictions, Matrix targets) {
+        public Tensor getDerivativeTensor(Tensor predictions, Tensor targets) {
             // Ensure input matrices have the same dimensions
-            if (predictions.getRowCount() != targets.getRowCount() || predictions.getColumnCount() != targets.getColumnCount()) {
-                System.err.println("Prediction: (" + predictions.getRowCount() + ", " + predictions.getColumnCount());
-                System.err.println("Target: (" + targets.getRowCount() + ", " + targets.getColumnCount());
-                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-            }
+            Tensor.validateTensors(predictions, targets);
             // Calculate the derivative of categorical cross-entropy loss for each element
-            return Matrix.matrixMapping(predictions, (a, b, value) -> {
+            return Tensor.tensorMapping(predictions, (a, value) -> {
                 //                double y = targets.getEntry(a, b);
                 //                double p = Math.max(Math.min(value, 1 - 1e-15), 1e-15);
                 //                return (y / p - (1 - y) / (1 - p));
-                return targets.getEntry(a, b) - value;
+                return targets.getData()[a] - value;
             });
         }
     }, // Categorical Cross Entropy
     // TODO: Yet to implement the sparse categorical cross entropy.
     //    SPARSE_CATEGORICAL_CROSS_ENTROPY {
     //        @Override
-    //        public Matrix getLossFunctionMatrix(Matrix predictions, Matrix trueLabels) {
+    //        public Tensor getLossFunctionTensor(Tensor predictions, Tensor trueLabels) {
     //            // Check for dimension compatibility
     //            if (predictions.getRowCount() != trueLabels.getRowCount() || predictions.getColumnCount() != trueLabels.getColumnCount()) {
     //                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
     //            }
     //
     //            // Calculate sparse categorical cross-entropy loss for each element
-    //            return Matrix.matrixMapping(new Matrix(predictions.getRowCount(), predictions.getColumnCount()), (row, column, value) -> {
-    //                int trueClass = (int) trueLabels.getEntry(row, 0); // Assuming target is a single column matrix with class indices
-    //                double predictedProb = predictions.getEntry(row, trueClass);
+    //            return Tensor.matrixMapping(new Tensor(predictions.getRowCount(), predictions.getColumnCount()), (FlatIndex, column, value) -> {
+    //                int trueClass = (int) trueLabels.getEntry(FlatIndex, 0); // Assuming target is a single column matrix with class indices
+    //                double predictedProb = predictions.getEntry(FlatIndex, trueClass);
     //                predictedProb = Math.max(predictedProb, 1e-15); // Clip to prevent log(0)
     //                return -Math.log(predictedProb);
     //            });
     //        }
     //
     //        @Override
-    //        public Matrix getDerivativeMatrix(Matrix predictions, Matrix trueLabels) {
+    //        public Tensor getDerivativeTensor(Tensor predictions, Tensor trueLabels) {
     //            // Check for dimension compatibility
     //            if (predictions.getRowCount() != trueLabels.getRowCount() || predictions.getColumnCount() != trueLabels.getColumnCount()) {
     //                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
     //            }
     //
     //            // Calculate the derivative for each element
-    //            return Matrix.matrixMapping(new Matrix(predictions.getRowCount(), predictions.getColumnCount()), (row, column, value) -> {
-    //                int trueClass = (int) trueLabels.getEntry(row, 0);
+    //            return Tensor.matrixMapping(new Tensor(predictions.getRowCount(), predictions.getColumnCount()), (FlatIndex, column, value) -> {
+    //                int trueClass = (int) trueLabels.getEntry(FlatIndex, 0);
     //                return column == trueClass ? value - 1 : value;
     //            });
     //        }

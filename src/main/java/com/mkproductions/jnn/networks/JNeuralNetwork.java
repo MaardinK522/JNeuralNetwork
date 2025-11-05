@@ -1,12 +1,11 @@
 package com.mkproductions.jnn.networks;
 
+import com.mkproductions.jnn.cpu.entity.Tensor;
 import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
-import com.mkproductions.jnn.cpu.entity.Matrix;
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -17,13 +16,13 @@ import java.util.stream.IntStream;
 public class JNeuralNetwork implements Serializable {
     private final int numberOfInputNode;
     private final DenseLayer[] netWorkDenseLayers;
-    private final Matrix[] weightsMatrices;
-    private final Matrix[] biasesMatrices;
-    private final Matrix[] velocityWeightsMatrices;
-    private final Matrix[] velocityBiasesMatrices;
-    private final Matrix[] momentumWeightsMatrices;
-    private final Matrix[] momentumBiasesMatrices;
-    private final Matrix[] outputMatrices;
+    private final Tensor[] weightsMatrices;
+    private final Tensor[] biasesMatrices;
+    private final Tensor[] velocityWeightsMatrices;
+    private final Tensor[] velocityBiasesMatrices;
+    private final Tensor[] momentumWeightsMatrices;
+    private final Tensor[] momentumBiasesMatrices;
+    private final Tensor[] outputMatrices;
     private LossFunctionAble lossFunctionable;
 
     private JNeuralNetworkOptimizer jNeuralNetworkOptimizer;
@@ -46,36 +45,36 @@ public class JNeuralNetwork implements Serializable {
         this.numberOfInputNode = numberOfInputNode;
         this.netWorkDenseLayers = netWorkDenseLayers;
         // Initializing the arrays
-        this.weightsMatrices = new Matrix[netWorkDenseLayers.length];
-        this.biasesMatrices = new Matrix[netWorkDenseLayers.length];
-        this.outputMatrices = new Matrix[this.netWorkDenseLayers.length];
-        this.velocityWeightsMatrices = new Matrix[this.weightsMatrices.length];
-        this.velocityBiasesMatrices = new Matrix[this.weightsMatrices.length];
-        this.momentumWeightsMatrices = new Matrix[this.weightsMatrices.length];
-        this.momentumBiasesMatrices = new Matrix[this.weightsMatrices.length];
+        this.weightsMatrices = new Tensor[netWorkDenseLayers.length];
+        this.biasesMatrices = new Tensor[netWorkDenseLayers.length];
+        this.outputMatrices = new Tensor[this.netWorkDenseLayers.length];
+        this.velocityWeightsMatrices = new Tensor[this.weightsMatrices.length];
+        this.velocityBiasesMatrices = new Tensor[this.weightsMatrices.length];
+        this.momentumWeightsMatrices = new Tensor[this.weightsMatrices.length];
+        this.momentumBiasesMatrices = new Tensor[this.weightsMatrices.length];
         this.momentumFactorBeta1 = 0.9;
         this.momentumFactorBeta2 = 0.999;
-        // Assign weights and biases and velocity to matrix arrays
+        // Assign weights and biases and velocity to Tensor arrays
         for (int layerIndex = 0; layerIndex < this.weightsMatrices.length; layerIndex++) {
             if (layerIndex == 0) {
-                this.weightsMatrices[layerIndex] = new Matrix(this.netWorkDenseLayers[layerIndex].numberOfNodes(), this.numberOfInputNode);
+                this.weightsMatrices[layerIndex] = new Tensor(this.netWorkDenseLayers[layerIndex].getNumberOfNodes(), this.numberOfInputNode);
             } else {
-                this.weightsMatrices[layerIndex] = new Matrix(this.netWorkDenseLayers[layerIndex].numberOfNodes(), this.netWorkDenseLayers[layerIndex - 1].numberOfNodes());
+                this.weightsMatrices[layerIndex] = new Tensor(this.netWorkDenseLayers[layerIndex].getNumberOfNodes(), this.netWorkDenseLayers[layerIndex - 1].getNumberOfNodes());
             }
-            this.outputMatrices[layerIndex] = new Matrix(this.netWorkDenseLayers[layerIndex].numberOfNodes(), 1);
-            this.biasesMatrices[layerIndex] = new Matrix(this.outputMatrices[layerIndex].getRowCount(), this.outputMatrices[layerIndex].getColumnCount());
+            this.outputMatrices[layerIndex] = new Tensor(this.netWorkDenseLayers[layerIndex].getNumberOfNodes(), 1);
+            this.biasesMatrices[layerIndex] = new Tensor(this.outputMatrices[layerIndex].getShape()[0], this.outputMatrices[layerIndex].getShape()[1]);
 
             // Randomizing the weights and bias
             randomize(this.weightsMatrices[layerIndex]);
             randomize(this.biasesMatrices[layerIndex]);
             // Initializing the velocity matrices.
             if (this.jNeuralNetworkOptimizer != JNeuralNetworkOptimizer.SGD) {
-                this.velocityWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRowCount(), this.weightsMatrices[layerIndex].getColumnCount());
-                this.velocityBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRowCount(), this.biasesMatrices[layerIndex].getColumnCount());
+                this.velocityWeightsMatrices[layerIndex] = new Tensor(this.weightsMatrices[layerIndex].getShape()[0], this.weightsMatrices[layerIndex].getShape()[1]);
+                this.velocityBiasesMatrices[layerIndex] = new Tensor(this.biasesMatrices[layerIndex].getShape()[0], this.biasesMatrices[layerIndex].getShape()[1]);
             }
             if (this.jNeuralNetworkOptimizer == JNeuralNetworkOptimizer.ADAM) {
-                this.momentumWeightsMatrices[layerIndex] = new Matrix(this.weightsMatrices[layerIndex].getRowCount(), this.weightsMatrices[layerIndex].getColumnCount());
-                this.momentumBiasesMatrices[layerIndex] = new Matrix(this.biasesMatrices[layerIndex].getRowCount(), this.biasesMatrices[layerIndex].getColumnCount());
+                this.momentumWeightsMatrices[layerIndex] = new Tensor(this.weightsMatrices[layerIndex].getShape()[0], this.weightsMatrices[layerIndex].getShape()[1]);
+                this.momentumBiasesMatrices[layerIndex] = new Tensor(this.biasesMatrices[layerIndex].getShape()[0], this.biasesMatrices[layerIndex].getShape()[1]);
             }
         }
     }
@@ -114,15 +113,15 @@ public class JNeuralNetwork implements Serializable {
         }
     }
 
-    private Matrix[] forwardPropagation(double[] inputs) {
-        final Matrix inputMatrix = Matrix.fromArray(inputs).transpose(); //new Matrix(new double[][] { inputs });
+    private Tensor[] forwardPropagation(double[] inputs) {
+        Tensor inputTensor = new Tensor(inputs, inputs.length, 1); //new Tensor(new double[][] { inputs });
         for (int layerIndex = 0; layerIndex < this.weightsMatrices.length; layerIndex++) {
             if (layerIndex == 0) {
-                this.outputMatrices[layerIndex] = Matrix.add(Matrix.matrixMultiplication(this.weightsMatrices[layerIndex], inputMatrix), this.biasesMatrices[layerIndex]);
+                this.outputMatrices[layerIndex] = Tensor.add(Tensor.matrixMultiplication(this.weightsMatrices[layerIndex], inputTensor), this.biasesMatrices[layerIndex]);
             } else {
-                this.outputMatrices[layerIndex] = Matrix.add(Matrix.matrixMultiplication(this.weightsMatrices[layerIndex], this.outputMatrices[layerIndex - 1]), this.biasesMatrices[layerIndex]);
+                this.outputMatrices[layerIndex] = Tensor.add(Tensor.matrixMultiplication(this.weightsMatrices[layerIndex], this.outputMatrices[layerIndex - 1]), this.biasesMatrices[layerIndex]);
             }
-            this.outputMatrices[layerIndex] = getAppliedActivationFunctionMatrix(this.outputMatrices[layerIndex], this.netWorkDenseLayers[layerIndex].activationFunction());
+            this.outputMatrices[layerIndex] = getAppliedActivationFunctionTensor(this.outputMatrices[layerIndex], this.netWorkDenseLayers[layerIndex].getActivationFunction());
         }
         return this.outputMatrices;
     }
@@ -136,57 +135,56 @@ public class JNeuralNetwork implements Serializable {
      */
     public double[] processInputs(double @NotNull [] inputs) {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
-        Matrix[] outputMatrices = this.forwardPropagation(inputs);
-        double[] outputs = new double[this.netWorkDenseLayers[this.netWorkDenseLayers.length - 1].numberOfNodes()];
+        Tensor[] outputMatrices = this.forwardPropagation(inputs);
+        double[] outputs = new double[this.netWorkDenseLayers[this.netWorkDenseLayers.length - 1].getNumberOfNodes()];
         for (int a = 0; a < outputs.length; a++) {
             outputs[a] = outputMatrices[this.netWorkDenseLayers.length - 1].getEntry(a, 0);
         }
         return outputs;
     }
 
-    @Contract("_, _ -> new")
-    private Matrix[][] backPropagation(double[] inputs, double[] targets) {
-        Matrix[] biasesGradients = new Matrix[this.netWorkDenseLayers.length];
-        Matrix[] weightsGradients = new Matrix[this.netWorkDenseLayers.length];
-        Matrix targetMatrix = Matrix.fromArray(targets);
-        Matrix[] outputMatrices = forwardPropagation(inputs);
-        Matrix outputMatrix = outputMatrices[netWorkDenseLayers.length - 1];
+    private Tensor[][] backPropagation(double[] inputs, double[] targets) {
+        Tensor[] biasesGradients = new Tensor[this.netWorkDenseLayers.length];
+        Tensor[] weightsGradients = new Tensor[this.netWorkDenseLayers.length];
+        Tensor targetTensor = new Tensor(targets, 1, targets.length);
+        Tensor[] outputMatrices = forwardPropagation(inputs);
+        Tensor outputTensor = outputMatrices[netWorkDenseLayers.length - 1];
 
-        // Initialize error matrix (will be set in first iteration)
-        Matrix errorMatrix = null;
+        // Initialize error Tensor (will be set in the first iteration)
+        Tensor errorTensor = null;
 
         // Layer loop
         for (int layerIndex = this.netWorkDenseLayers.length - 1; layerIndex >= 0; layerIndex--) {
 
             // 2. Calculate data (dL / dz) per index.
-            if (layerIndex == this.netWorkDenseLayers.length - 1 && lossFunctionable.equals(LossFunction.CATEGORICAL_CROSS_ENTROPY) && this.netWorkDenseLayers[layerIndex].activationFunction()
+            if (layerIndex == this.netWorkDenseLayers.length - 1 && lossFunctionable.equals(LossFunction.CATEGORICAL_CROSS_ENTROPY) && this.netWorkDenseLayers[layerIndex].getActivationFunction()
                     .equals(ActivationFunction.SOFTMAX)) {
-                biasesGradients[layerIndex] = Matrix.subtract(outputMatrix, targetMatrix.transpose());
+                biasesGradients[layerIndex] = Tensor.subtract(outputTensor, Tensor.transpose(targetTensor));
 
             } else {
                 if (layerIndex == this.netWorkDenseLayers.length - 1) {
-                    errorMatrix = this.lossFunctionable.getDerivativeMatrix(outputMatrix, targetMatrix.transpose());
+                    errorTensor = this.lossFunctionable.getDerivativeTensor(outputTensor, Tensor.transpose(targetTensor));
                 }
-                Matrix activationDerivative = getDactivatedActivationFunctionMatrix(outputMatrices[layerIndex], this.netWorkDenseLayers[layerIndex].activationFunction());
-                //  Handle Softmax Jacobian with matrix multiplication
-                assert errorMatrix != null;
-                if (this.netWorkDenseLayers[layerIndex].activationFunction().equals(ActivationFunction.SOFTMAX)) {
-                    biasesGradients[layerIndex] = Matrix.matrixMultiplication(activationDerivative, errorMatrix);
+                Tensor activationDerivative = getDactivatedActivationFunctionTensor(outputMatrices[layerIndex], this.netWorkDenseLayers[layerIndex].getActivationFunction());
+                //  Handle Softmax Jacobian with Tensor multiplication
+                assert errorTensor != null;
+                if (this.netWorkDenseLayers[layerIndex].getActivationFunction().equals(ActivationFunction.SOFTMAX)) {
+                    biasesGradients[layerIndex] = Tensor.matrixMultiplication(activationDerivative, errorTensor);
                 } else {
-                    biasesGradients[layerIndex] = Matrix.elementWiseMultiply(activationDerivative, errorMatrix);
+                    biasesGradients[layerIndex] = Tensor.elementWiseMultiplication(activationDerivative, errorTensor);
                 }
             }
 
             // 3. Propagate error backwards (for the next layer in the loop)
             if (layerIndex > 0) {
-                errorMatrix = Matrix.matrixMultiplication(this.weightsMatrices[layerIndex].transpose(), biasesGradients[layerIndex]);
+                errorTensor = Tensor.matrixMultiplication(Tensor.transpose(this.weightsMatrices[layerIndex]), biasesGradients[layerIndex]);
             }
 
             // 4. Calculate the weight gradients
-            Matrix previousOutputMatrix = (layerIndex == 0) ? Matrix.fromArray(inputs) : outputMatrices[layerIndex - 1].transpose();
-            weightsGradients[layerIndex] = Matrix.matrixMultiplication(biasesGradients[layerIndex], previousOutputMatrix);
+            Tensor previousOutputTensor = (layerIndex == 0) ? new Tensor(inputs, 1, inputs.length) : Tensor.transpose(outputMatrices[layerIndex - 1]);
+            weightsGradients[layerIndex] = Tensor.matrixMultiplication(biasesGradients[layerIndex], previousOutputTensor);
         }
-        return new Matrix[][] { biasesGradients, weightsGradients };
+        return new Tensor[][] { biasesGradients, weightsGradients };
     }
 
     /**
@@ -200,32 +198,32 @@ public class JNeuralNetwork implements Serializable {
     private void backPropagateSGD(double @NotNull [] inputs, double[] targetOutput) {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
         // Gradients are now RAW: gradients[0] = dL/db, gradients[1] = dL/dW
-        Matrix[][] gradients = this.backPropagation(inputs, targetOutput);
-        Matrix[] deltaBiasesMatrix = gradients[0];
-        Matrix[] deltaWeightsMatrix = gradients[1];
+        Tensor[][] gradients = this.backPropagation(inputs, targetOutput);
+        Tensor[] deltaBiasesTensor = gradients[0];
+        Tensor[] deltaWeightsTensor = gradients[1];
         for (int layerIndex = this.netWorkDenseLayers.length - 1; layerIndex >= 0; layerIndex--) {
             // Apply learning rate.
-            deltaBiasesMatrix[layerIndex] = Matrix.scalarMultiply(deltaBiasesMatrix[layerIndex], -this.learningRate);
-            deltaWeightsMatrix[layerIndex] = Matrix.scalarMultiply(deltaWeightsMatrix[layerIndex], -this.learningRate);
+            deltaBiasesTensor[layerIndex] = Tensor.scalarMultiply(deltaBiasesTensor[layerIndex], -this.learningRate);
+            deltaWeightsTensor[layerIndex] = Tensor.scalarMultiply(deltaWeightsTensor[layerIndex], -this.learningRate);
             // Apply change: W_new = W_old - delta
-            this.biasesMatrices[layerIndex].subtract(deltaBiasesMatrix[layerIndex]);
-            this.weightsMatrices[layerIndex].subtract(deltaWeightsMatrix[layerIndex]);
+            this.biasesMatrices[layerIndex].subtract(deltaBiasesTensor[layerIndex]);
+            this.weightsMatrices[layerIndex].subtract(deltaWeightsTensor[layerIndex]);
         }
     }
 
     private void backPropagateSGDWithMomentum(double @NotNull [] inputs, double[] targetOutput) {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
-        Matrix[][] gradients = this.backPropagation(inputs, targetOutput);
-        Matrix[] deltaBiasesMatrix = gradients[0];
-        Matrix[] deltaWeightsMatrix = gradients[1];
+        Tensor[][] gradients = this.backPropagation(inputs, targetOutput);
+        Tensor[] deltaBiasesTensor = gradients[0];
+        Tensor[] deltaWeightsTensor = gradients[1];
         for (int layerIndex = this.netWorkDenseLayers.length - 1; layerIndex >= 0; layerIndex--) {
-            deltaBiasesMatrix[layerIndex] = Matrix.scalarMultiply(deltaBiasesMatrix[layerIndex], -this.learningRate);
-            deltaWeightsMatrix[layerIndex] = Matrix.scalarMultiply(deltaWeightsMatrix[layerIndex], -this.learningRate);
+            deltaBiasesTensor[layerIndex] = Tensor.scalarMultiply(deltaBiasesTensor[layerIndex], -this.learningRate);
+            deltaWeightsTensor[layerIndex] = Tensor.scalarMultiply(deltaWeightsTensor[layerIndex], -this.learningRate);
             // Calculating the velocities of the weights and biases
-            this.velocityWeightsMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta1),
-                    Matrix.scalarMultiply(deltaWeightsMatrix[layerIndex], 1 - this.momentumFactorBeta1));
-            this.velocityBiasesMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta1),
-                    Matrix.scalarMultiply(deltaBiasesMatrix[layerIndex], 1 - this.momentumFactorBeta1));
+            this.velocityWeightsMatrices[layerIndex] = Tensor.add(Tensor.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta1),
+                    Tensor.scalarMultiply(deltaWeightsTensor[layerIndex], 1 - this.momentumFactorBeta1));
+            this.velocityBiasesMatrices[layerIndex] = Tensor.add(Tensor.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta1),
+                    Tensor.scalarMultiply(deltaBiasesTensor[layerIndex], 1 - this.momentumFactorBeta1));
             // Applying the change of weights in the current weights of the network.
             this.weightsMatrices[layerIndex].subtract(this.velocityWeightsMatrices[layerIndex]);
             this.biasesMatrices[layerIndex].subtract(this.velocityBiasesMatrices[layerIndex]);
@@ -234,55 +232,63 @@ public class JNeuralNetwork implements Serializable {
 
     private void backPropagateRMSProp(double @NotNull [] inputs, double[] targetOutput) {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
-        Matrix[][] gradients = this.backPropagation(inputs, targetOutput);
-        Matrix[] deltaBiasesMatrix = gradients[0];
-        Matrix[] deltaWeightsMatrix = gradients[1];
+        Tensor[][] gradients = this.backPropagation(inputs, targetOutput);
+        Tensor[] deltaBiasesTensor = gradients[0];
+        Tensor[] deltaWeightsTensor = gradients[1];
         for (int layerIndex = this.netWorkDenseLayers.length - 1; layerIndex >= 0; layerIndex--) {
-            deltaBiasesMatrix[layerIndex] = Matrix.scalarMultiply(deltaBiasesMatrix[layerIndex], -this.learningRate);
-            deltaWeightsMatrix[layerIndex] = Matrix.scalarMultiply(deltaWeightsMatrix[layerIndex], -this.learningRate);
+            deltaBiasesTensor[layerIndex] = Tensor.scalarMultiply(deltaBiasesTensor[layerIndex], -this.learningRate);
+            deltaWeightsTensor[layerIndex] = Tensor.scalarMultiply(deltaWeightsTensor[layerIndex], -this.learningRate);
             // Weights
-            Matrix squaredDeltaWeightsMatrix = Matrix.matrixMapping(deltaWeightsMatrix[layerIndex], (_, _, val) -> Math.pow(val, 2));
-            this.velocityWeightsMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta1),
-                    Matrix.scalarMultiply(squaredDeltaWeightsMatrix, 1 - this.momentumFactorBeta1));
-            Matrix newWeightsVelocityMatrix = this.velocityWeightsMatrices[layerIndex];
-            Matrix rootWithVelocityWegihtsMatrix = Matrix.matrixMapping(deltaWeightsMatrix[layerIndex],
-                    (r, c, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(newWeightsVelocityMatrix.getEntry(r, c) + this.epsilonRMSProp));
+            Tensor squaredDeltaWeightsTensor = Tensor.tensorMapping(deltaWeightsTensor[layerIndex], (_, val) -> Math.pow(val, 2));
+
+            this.velocityWeightsMatrices[layerIndex] = Tensor.add(Tensor.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta1),
+                    Tensor.scalarMultiply(squaredDeltaWeightsTensor, 1 - this.momentumFactorBeta1));
+
+            Tensor newWeightsVelocityTensor = this.velocityWeightsMatrices[layerIndex];
+            Tensor rootWithVelocityWeightsTensor = Tensor.tensorMapping(deltaWeightsTensor[layerIndex],
+                    ((flatIndex, value) -> this.learningRate * value / Math.sqrt(newWeightsVelocityTensor.getEntry(flatIndex) + this.epsilonRMSProp)));
+            //            Tensor.tensorMapping(deltaWeightsTensor[layerIndex], (r, c, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(newWeightsVelocityTensor.getEntry(r, c) + this.epsilonRMSProp));
+
             // Biases
-            Matrix squaredGradientsMatrix = Matrix.matrixMapping(deltaBiasesMatrix[layerIndex], (_, _, gradient) -> Math.pow(gradient, 2));
-            this.velocityBiasesMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta1),
-                    Matrix.scalarMultiply(squaredGradientsMatrix, 1 - this.momentumFactorBeta1));
-            Matrix newBiasesVelocityMatrix = this.velocityBiasesMatrices[layerIndex];
-            Matrix rootWithVelocityBiasesMatrix = Matrix.matrixMapping(deltaBiasesMatrix[layerIndex],
-                    (r, c, gradient) -> this.learningRate * gradient / Math.sqrt(newBiasesVelocityMatrix.getEntry(r, c) + this.epsilonRMSProp));
+            Tensor squaredGradientsTensor = Tensor.tensorMapping(deltaBiasesTensor[layerIndex], (_, gradient) -> Math.pow(gradient, 2));
+            this.velocityBiasesMatrices[layerIndex] = Tensor.add(Tensor.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta1),
+                    Tensor.scalarMultiply(squaredGradientsTensor, 1 - this.momentumFactorBeta1));
+
+            Tensor newBiasesVelocityTensor = this.velocityBiasesMatrices[layerIndex];
+            Tensor rootWithVelocityBiasesTensor = Tensor.tensorMapping(deltaBiasesTensor[layerIndex],
+                    (flatIndex, value) -> this.learningRate * value / Math.sqrt(newBiasesVelocityTensor.getData()[flatIndex] + this.epsilonRMSProp));
+
+            //            Tensor rootWithVelocityBiasesTensor = Tensor.TensorMapping(deltaBiasesTensor[layerIndex],
+            //                    (r, c, gradient) -> this.learningRate * gradient / Math.sqrt(newBiasesVelocityTensor.getEntry(r, c) + this.epsilonRMSProp));
             // Applying the change of weights in the current weights of the network.
-            this.weightsMatrices[layerIndex].subtract(rootWithVelocityWegihtsMatrix);
-            this.biasesMatrices[layerIndex].subtract(rootWithVelocityBiasesMatrix);
+            this.weightsMatrices[layerIndex].subtract(rootWithVelocityWeightsTensor);
+            this.biasesMatrices[layerIndex].subtract(rootWithVelocityBiasesTensor);
         }
     }
 
     private void backPropagateAdaGrad(double @NotNull [] inputs, double[] targetOutput) {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
-        Matrix[][] gradients = this.backPropagation(inputs, targetOutput);
-        Matrix[] deltaBiasesMatrix = gradients[0];
-        Matrix[] deltaWeightsMatrix = gradients[1];
+        Tensor[][] gradients = this.backPropagation(inputs, targetOutput);
+        Tensor[] deltaBiasesTensor = gradients[0];
+        Tensor[] deltaWeightsTensor = gradients[1];
         for (int layerIndex = this.netWorkDenseLayers.length - 1; layerIndex >= 0; layerIndex--) {
-            deltaBiasesMatrix[layerIndex] = Matrix.scalarMultiply(deltaBiasesMatrix[layerIndex], -this.learningRate);
-            deltaWeightsMatrix[layerIndex] = Matrix.scalarMultiply(deltaWeightsMatrix[layerIndex], -this.learningRate);
+            deltaBiasesTensor[layerIndex] = Tensor.scalarMultiply(deltaBiasesTensor[layerIndex], -this.learningRate);
+            deltaWeightsTensor[layerIndex] = Tensor.scalarMultiply(deltaWeightsTensor[layerIndex], -this.learningRate);
             // Calculating square of delta weights and biases.
-            Matrix squaredDeltaWeightsMatrix = Matrix.matrixMapping(deltaWeightsMatrix[layerIndex], (_, _, deltaWeight) -> Math.pow(deltaWeight, 2));
-            Matrix squaredGradientsMatrix = Matrix.matrixMapping(deltaBiasesMatrix[layerIndex], (_, _, gradient) -> Math.pow(gradient, 2));
+            Tensor squaredDeltaWeightsTensor = Tensor.tensorMapping(deltaWeightsTensor[layerIndex], (_, deltaWeight) -> Math.pow(deltaWeight, 2));
+            Tensor squaredGradientsTensor = Tensor.tensorMapping(deltaBiasesTensor[layerIndex], (_, gradient) -> Math.pow(gradient, 2));
             // Weights
-            this.velocityWeightsMatrices[layerIndex] = Matrix.add(this.velocityWeightsMatrices[layerIndex], squaredDeltaWeightsMatrix);
-            Matrix currentWeightVelocity = this.velocityWeightsMatrices[layerIndex];
-            Matrix rootWithVelocityWegihtsMatrix = Matrix.matrixMapping(deltaWeightsMatrix[layerIndex],
-                    (row, column, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(currentWeightVelocity.getEntry(row, column) + this.epsilonRMSProp));
-            this.weightsMatrices[layerIndex].subtract(rootWithVelocityWegihtsMatrix);
+            this.velocityWeightsMatrices[layerIndex] = Tensor.add(this.velocityWeightsMatrices[layerIndex], squaredDeltaWeightsTensor);
+            Tensor currentWeightVelocity = this.velocityWeightsMatrices[layerIndex];
+            Tensor rootWithVelocityWegihtsTensor = Tensor.tensorMapping(deltaWeightsTensor[layerIndex],
+                    (flatIndex, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(currentWeightVelocity.getData()[flatIndex] + this.epsilonRMSProp));
+            this.weightsMatrices[layerIndex].subtract(rootWithVelocityWegihtsTensor);
             // Biases
-            this.velocityBiasesMatrices[layerIndex] = Matrix.add(this.velocityBiasesMatrices[layerIndex], squaredGradientsMatrix);
-            Matrix currentBiasesVelocity = this.velocityBiasesMatrices[layerIndex];
-            Matrix rootWithVelocityBiasesMatrix = Matrix.matrixMapping(deltaBiasesMatrix[layerIndex],
-                    (row, column, gradient) -> this.learningRate * gradient / Math.sqrt(currentBiasesVelocity.getEntry(row, column) + this.epsilonRMSProp));
-            this.biasesMatrices[layerIndex].subtract(rootWithVelocityBiasesMatrix);
+            this.velocityBiasesMatrices[layerIndex] = Tensor.add(this.velocityBiasesMatrices[layerIndex], squaredGradientsTensor);
+            Tensor currentBiasesVelocity = this.velocityBiasesMatrices[layerIndex];
+            Tensor rootWithVelocityBiasesTensor = Tensor.tensorMapping(deltaBiasesTensor[layerIndex],
+                    (flatIndex, gradient) -> this.learningRate * gradient / Math.sqrt(currentBiasesVelocity.getData()[flatIndex] + this.epsilonRMSProp));
+            this.biasesMatrices[layerIndex].subtract(rootWithVelocityBiasesTensor);
         }
     }
 
@@ -290,38 +296,38 @@ public class JNeuralNetwork implements Serializable {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
         this.adamSteps++;
 
-        Matrix[][] gradients = this.backPropagation(inputs, targetOutput);
-        Matrix[] deltaBiasesMatrix = gradients[0];
-        Matrix[] deltaWeightsMatrix = gradients[1];
+        Tensor[][] gradients = this.backPropagation(inputs, targetOutput);
+        Tensor[] deltaBiasesTensor = gradients[0];
+        Tensor[] deltaWeightsTensor = gradients[1];
 
         final double beta_1_t = Math.pow(this.momentumFactorBeta1, this.adamSteps);
         final double beta_2_t = Math.pow(this.momentumFactorBeta2, this.adamSteps);
 
         for (int layerIndex = this.netWorkDenseLayers.length - 1; layerIndex >= 0; layerIndex--) {
-            deltaBiasesMatrix[layerIndex] = Matrix.scalarMultiply(deltaBiasesMatrix[layerIndex], -this.learningRate);
-            deltaWeightsMatrix[layerIndex] = Matrix.scalarMultiply(deltaWeightsMatrix[layerIndex], -this.learningRate);
+            deltaBiasesTensor[layerIndex] = Tensor.scalarMultiply(deltaBiasesTensor[layerIndex], -this.learningRate);
+            deltaWeightsTensor[layerIndex] = Tensor.scalarMultiply(deltaWeightsTensor[layerIndex], -this.learningRate);
 
-            this.momentumWeightsMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.momentumWeightsMatrices[layerIndex], this.momentumFactorBeta1),
-                    Matrix.scalarMultiply(deltaWeightsMatrix[layerIndex], 1 - this.momentumFactorBeta1));
-            this.momentumBiasesMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.momentumBiasesMatrices[layerIndex], this.momentumFactorBeta1),
-                    Matrix.scalarMultiply(deltaBiasesMatrix[layerIndex], 1 - this.momentumFactorBeta1));
+            this.momentumWeightsMatrices[layerIndex] = Tensor.add(Tensor.scalarMultiply(this.momentumWeightsMatrices[layerIndex], this.momentumFactorBeta1),
+                    Tensor.scalarMultiply(deltaWeightsTensor[layerIndex], 1 - this.momentumFactorBeta1));
+            this.momentumBiasesMatrices[layerIndex] = Tensor.add(Tensor.scalarMultiply(this.momentumBiasesMatrices[layerIndex], this.momentumFactorBeta1),
+                    Tensor.scalarMultiply(deltaBiasesTensor[layerIndex], 1 - this.momentumFactorBeta1));
 
-            Matrix squaredGradientsWeights = Matrix.matrixMapping(deltaWeightsMatrix[layerIndex], (_, _, grad) -> Math.pow(grad, 2));
-            Matrix squaredGradientsBiases = Matrix.matrixMapping(deltaBiasesMatrix[layerIndex], (_, _, grad) -> Math.pow(grad, 2));
+            Tensor squaredGradientsWeights = Tensor.tensorMapping(deltaWeightsTensor[layerIndex], (_, grad) -> Math.pow(grad, 2));
+            Tensor squaredGradientsBiases = Tensor.tensorMapping(deltaBiasesTensor[layerIndex], (_, grad) -> Math.pow(grad, 2));
 
-            this.velocityWeightsMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta2),
-                    Matrix.scalarMultiply(squaredGradientsWeights, 1 - this.momentumFactorBeta2));
-            this.velocityBiasesMatrices[layerIndex] = Matrix.add(Matrix.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta2),
-                    Matrix.scalarMultiply(squaredGradientsBiases, 1 - this.momentumFactorBeta2));
+            this.velocityWeightsMatrices[layerIndex] = Tensor.add(Tensor.scalarMultiply(this.velocityWeightsMatrices[layerIndex], this.momentumFactorBeta2),
+                    Tensor.scalarMultiply(squaredGradientsWeights, 1 - this.momentumFactorBeta2));
+            this.velocityBiasesMatrices[layerIndex] = Tensor.add(Tensor.scalarMultiply(this.velocityBiasesMatrices[layerIndex], this.momentumFactorBeta2),
+                    Tensor.scalarMultiply(squaredGradientsBiases, 1 - this.momentumFactorBeta2));
 
-            Matrix momentumWeightsHat = Matrix.matrixMapping(this.momentumWeightsMatrices[layerIndex], (_, _, m) -> m / (1 - beta_1_t));
-            Matrix momentumBiasesHat = Matrix.matrixMapping(this.momentumBiasesMatrices[layerIndex], (_, _, m) -> m / (1 - beta_1_t));
+            Tensor momentumWeightsHat = Tensor.tensorMapping(this.momentumWeightsMatrices[layerIndex], (_, m) -> m / (1 - beta_1_t));
+            Tensor momentumBiasesHat = Tensor.tensorMapping(this.momentumBiasesMatrices[layerIndex], (_, m) -> m / (1 - beta_1_t));
 
-            Matrix velocityWeightsHat = Matrix.matrixMapping(this.velocityWeightsMatrices[layerIndex], (_, _, v) -> v / (1 - beta_2_t));
-            Matrix velocityBiasesHat = Matrix.matrixMapping(this.velocityBiasesMatrices[layerIndex], (_, _, v) -> v / (1 - beta_2_t));
+            Tensor velocityWeightsHat = Tensor.tensorMapping(this.velocityWeightsMatrices[layerIndex], (_, v) -> v / (1 - beta_2_t));
+            Tensor velocityBiasesHat = Tensor.tensorMapping(this.velocityBiasesMatrices[layerIndex], (_, v) -> v / (1 - beta_2_t));
 
-            Matrix updateWeights = Matrix.matrixMapping(momentumWeightsHat, (row, col, m) -> this.learningRate * m / (Math.sqrt(velocityWeightsHat.getEntry(row, col)) + this.epsilonRMSProp));
-            Matrix updateBiases = Matrix.matrixMapping(momentumBiasesHat, (row, col, m) -> this.learningRate * m / (Math.sqrt(velocityBiasesHat.getEntry(row, col)) + this.epsilonRMSProp));
+            Tensor updateWeights = Tensor.tensorMapping(momentumWeightsHat, (flatIndex, m) -> this.learningRate * m / (Math.sqrt(velocityWeightsHat.getData()[flatIndex]) + this.epsilonRMSProp));
+            Tensor updateBiases = Tensor.tensorMapping(momentumBiasesHat, (flatIndex, m) -> this.learningRate * m / (Math.sqrt(velocityBiasesHat.getData()[flatIndex]) + this.epsilonRMSProp));
 
             this.weightsMatrices[layerIndex].subtract(updateWeights);
             this.biasesMatrices[layerIndex].subtract(updateBiases);
@@ -342,7 +348,7 @@ public class JNeuralNetwork implements Serializable {
         if (trainingInputs[0].length != this.numberOfInputNode) {
             throw new IllegalArgumentException("Mismatch inputs size.");
         }
-        if (trainingOutputs[0].length != this.netWorkDenseLayers[this.netWorkDenseLayers.length - 1].numberOfNodes()) {
+        if (trainingOutputs[0].length != this.netWorkDenseLayers[this.netWorkDenseLayers.length - 1].getNumberOfNodes()) {
             throw new IllegalArgumentException("Mismatch outputs size.");
         }
         int progress;
@@ -456,41 +462,40 @@ public class JNeuralNetwork implements Serializable {
         return accuracy;
     }
 
-    public static Matrix getAppliedActivationFunctionMatrix(Matrix matrix, @NotNull ActivationFunction activationFunction) {
+    public static Tensor getAppliedActivationFunctionTensor(Tensor tensor, @NotNull ActivationFunction activationFunction) {
         if (activationFunction.name().equals(ActivationFunction.SOFTMAX.name())) {
-            if (matrix.getColumnCount() != 1) {
-                throw new IllegalArgumentException("Unable to apply softmax due to more column existing in the given matrix.");
+            if (tensor.getShape()[1] != 1) {
+                throw new IllegalArgumentException("Unable to apply softmax due to more column existing in the given Tensor.");
             }
-            //            System.out.println("Printing non applied matrix: ");
-            //            matrix.printMatrix();
-            Matrix eRasiedMatrix = Matrix.matrixMapping(matrix, (a, b, value) -> Math.exp(matrix.getEntry(a, b)));
-            //            System.out.println("Printing powered by e matrix: ");
-            //            eRasiedMatrix.printMatrix();
-            double sum = IntStream.range(0, eRasiedMatrix.getRowCount()).mapToDouble(a -> eRasiedMatrix.getEntry(a, 0)).sum();
-            Matrix result = Matrix.matrixMapping(eRasiedMatrix, (a, b, value) -> eRasiedMatrix.getEntry(a, b) / sum);
+            //            System.out.println("Printing non applied Tensor: ");
+            //            Tensor.printTensor();
+            Tensor eRasiedTensor = Tensor.tensorMapping(tensor, (_, value) -> Math.exp(value));
+            //            System.out.println("Printing powered by e Tensor: ");
+            //            eRasiedTensor.printTensor();
+            double sum = IntStream.range(0, eRasiedTensor.getShape()[0]).mapToDouble(a -> eRasiedTensor.getEntry(a, 0)).sum();
+            Tensor result = Tensor.tensorMapping(eRasiedTensor, ((flatIndex, value) -> value / sum));
             //            System.out.println("After getting averaged by the sum: ");
-            //            result.printMatrix();
+            //            result.printTensor();
             return result;
         }
-        return Matrix.matrixMapping(matrix, activationFunction.equation);
+        return Tensor.tensorMapping(tensor, activationFunction.getEquation());
     }
 
-    public static Matrix getDactivatedActivationFunctionMatrix(Matrix activatedMatrix, @NotNull ActivationFunction activationFunction) {
+    public static Tensor getDactivatedActivationFunctionTensor(Tensor activatedTensor, @NotNull ActivationFunction activationFunction) {
         if (activationFunction.name().equals(ActivationFunction.SOFTMAX.name())) {
-            if (activatedMatrix.getRowCount() != 1 && activatedMatrix.getColumnCount() != 1) {
+            if (activatedTensor.getShape()[1] != 1) {
                 throw new IllegalArgumentException("Softmax derivative expects a single vector output.");
             }
-            int n = Math.max(activatedMatrix.getRowCount(), activatedMatrix.getColumnCount());
-            double[] values = Matrix.toFlatArray(activatedMatrix);
-            return Matrix.matrixMapping(new Matrix(n, n), (a, b, value) -> {
-                if (a == b) {
-                    return values[a] * (1 - values[a]);
-                } else {
-                    return -values[a] * values[b];
+            int n = Math.max(activatedTensor.getShape()[0], activatedTensor.getShape()[1]);
+            Tensor result = new Tensor(n, n);
+            for (int a = 0; a < n; a++) {
+                for (int b = 0; b < n; b++) {
+                    double entry = a == b ? (activatedTensor.getEntry(a, b) * (1 - activatedTensor.getEntry(a, b))) : -activatedTensor.getEntry(a, b) * activatedTensor.getEntry(b, a);
+                    result.setEntry(entry, a, b);
                 }
-            });
+            }
         }
-        return Matrix.matrixMapping(activatedMatrix, activationFunction.derivative);
+        return Tensor.tensorMapping(activatedTensor, activationFunction.getDerivative());
     }
 
     public double getEpsilonRMSProp() {
@@ -555,14 +560,14 @@ public class JNeuralNetwork implements Serializable {
         return this;
     }
 
-    private void randomize(@NotNull Matrix matrix2DDouble) {
-        double stdDev = Math.sqrt(2.0 / matrix2DDouble.getColumnCount());
-        for (int a = 0; a < matrix2DDouble.getRowCount(); a++) {
-            for (int i = 0; i < matrix2DDouble.getColumnCount(); i++) {
+    private void randomize(@NotNull Tensor tensor) {
+        double stdDev = Math.sqrt(2.0 / tensor.getShape()[1]);
+        for (int a = 0; a < tensor.getShape()[0]; a++) {
+            for (int b = 0; b < tensor.getShape()[1]; b++) {
                 double u1 = random.nextDouble();
                 double u2 = random.nextDouble();
                 double gaussian = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-                matrix2DDouble.setEntry(a, i, gaussian * stdDev);
+                tensor.setEntry(gaussian * stdDev, a, b);
             }
         }
     }
