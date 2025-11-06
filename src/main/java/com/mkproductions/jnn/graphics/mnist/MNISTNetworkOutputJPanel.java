@@ -18,7 +18,6 @@ public class MNISTNetworkOutputJPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
         int gap = 20;
         int x = 10;
         int y = 20;
@@ -31,7 +30,7 @@ public class MNISTNetworkOutputJPanel extends JPanel {
             g.setColor(new Color(color, color, color));
             g.fillRect(x, y, 50, 50);
             g.setColor(Color.white);
-            g.drawString("" + a, x + 20, y - 5);
+            g.drawString(STR."\{a}", x + 20, y - 5);
             x += 50 + gap;
             if (x + 50 >= getWidth() - 10) {
                 y += 50 + gap;
@@ -53,7 +52,7 @@ public class MNISTNetworkOutputJPanel extends JPanel {
             System.out.println();
         }
         this.prediction = MNISTFrame.processNetworkInputs(trainingInput);
-        System.out.println("Prediction: " + Arrays.toString(this.prediction));
+        System.out.println(STR."Prediction: \{Arrays.toString(this.prediction)}");
         System.out.println();
     }
 }

@@ -86,14 +86,14 @@ public class MNISTDrawningJPanel extends JPanel {
         double fps = 100000000.0 / (System.nanoTime() - startTime);
         g.setColor(Color.white);
 
-        g.drawString("" + (int) fps, 10, 20);
-        g.drawString("Mouse pressed: " + mousePressed1, 10, 35);
-        g.drawString("Mouse coordinates: (" + mouseX + ",  " + mouseY + ")", 10, 50);
-        g.drawString("Network accuracy: " + MNISTFrame.getNetworkAccuracy() + "%", 10, 65);
-        g.drawString("Auto-training status: " + MNISTFrame.getTrainNetworkStatus(), 10, 80);
-        g.drawString("Network loss function: " + MNISTFrame.getNetworkLoss(), 10, 95);
-        g.drawString("Network optimizer: " + MNISTFrame.getJNeuralNetworkOptimizer(), 10, 110);
-        g.drawString("Training epochs: " + MNISTFrame.getTrainingEpochs(), 10, 125);
-        g.drawString("Learning rate: " + String.format("%.4f", MNISTFrame.getLearningRate()), 10, 140);
+        g.drawString(STR."\{(int) fps}", 10, 20);
+        g.drawString(STR."Mouse pressed: \{mousePressed1}", 10, 35);
+        g.drawString(STR."Mouse coordinates: (\{mouseX},  \{mouseY})", 10, 50);
+        g.drawString(STR."Network accuracy: \{MNISTFrame.getNetworkAccuracy()}%", 10, 65);
+        g.drawString(STR."Auto-training status: \{MNISTFrame.getTrainNetworkStatus()}", 10, 80);
+        g.drawString(STR."Network loss function: \{MNISTFrame.getNetworkLoss()}", 10, 95);
+        g.drawString(STR."Network optimizer: \{MNISTFrame.getJNeuralNetworkOptimizer()}", 10, 110);
+        g.drawString(STR."Training epochs: \{MNISTFrame.getTrainingEpochs()}", 10, 125);
+        g.drawString(STR."Learning rate: \{String.format("%.4f", MNISTFrame.getLearningRate())}", 10, 140);
     }
 }

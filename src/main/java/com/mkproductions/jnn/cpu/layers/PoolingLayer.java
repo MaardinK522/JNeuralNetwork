@@ -3,11 +3,16 @@ package com.mkproductions.jnn.cpu.layers;
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 
 public class PoolingLayer extends Layer {
-    private int poolSize;
-    private int stride;
+    private final int poolSize;
+    private final int stride;
 
-    public PoolingLayer(ActivationFunction activation) {
-        super(activation);
+    private final PoolingLayerType poolingLayerType;
+
+    public PoolingLayer(int poolSize, int stride, PoolingLayerType poolingLayerType) {
+        super(poolingLayerType == PoolingLayerType.AVG ? "Average Pooling" : "Max Pooling", ActivationFunction.NONE);
+        this.poolSize = poolSize;
+        this.stride = stride;
+        this.poolingLayerType = poolingLayerType;
     }
 
     @Override
@@ -21,5 +26,13 @@ public class PoolingLayer extends Layer {
 
     public int getStride() {
         return stride;
+    }
+
+    public PoolingLayerType getPoolingLayerType() {
+        return poolingLayerType;
+    }
+
+    public enum PoolingLayerType {
+        MAX, AVG
     }
 }

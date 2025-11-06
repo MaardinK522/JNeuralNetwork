@@ -9,7 +9,7 @@ import java.util.function.Function;
 public class GeneticAlgorithm<Chromosome extends GeneticAlgorithm.MutableChromosome, Gene extends GeneticAlgorithm.MutableGene> {
     protected final Random random;
     protected double mutationRate;
-    protected double crossoverRate;
+    protected final double crossoverRate;
     int generationCount = -1;
     private final Function<Object[], Chromosome> initializer;
     private final int generationLength;
@@ -33,14 +33,15 @@ public class GeneticAlgorithm<Chromosome extends GeneticAlgorithm.MutableChromos
     public ArrayList<Chromosome> getNewGeneration(ArrayList<Chromosome> generation) {
         ArrayList<Chromosome> currentGeneration = new ArrayList<>();
         generation.sort((b1, b2) -> {
-            if (b1.fitness < b2.fitness)
+            if (b1.fitness < b2.fitness) {
                 return 1;
-            else if (b1.fitness == b2.fitness)
+            } else if (b1.fitness == b2.fitness) {
                 return 0;
+            }
             return -1;
         });
         Set<Chromosome> uniqueChromosome = new HashSet<>();
-//        for
+        //        for
         this.generationCount++;
         return currentGeneration;
     }
@@ -52,7 +53,6 @@ public class GeneticAlgorithm<Chromosome extends GeneticAlgorithm.MutableChromos
     public void setMutationRate(double mutationRate) {
         this.mutationRate = mutationRate;
     }
-
 
     public abstract static class MutableGene {
 

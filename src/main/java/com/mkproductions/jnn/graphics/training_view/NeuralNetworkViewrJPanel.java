@@ -19,7 +19,7 @@ public class NeuralNetworkViewrJPanel extends JPanel {
         this.trainingOutputs = trainingOutputs;
         this.epochs = 100;
         this.networkElementsIntroducer = new NetworkElementsIntroducer(0, 0, 200, getHeight());
-        this.networkRenderingArea = new NetworkRenderingArea(this.networkElementsIntroducer.getWidth() + 50, 0, getWidth() - this.networkElementsIntroducer.getWidth() - 50, getHeight() - 300);
+        this.networkRenderingArea = new NetworkRenderingArea(this.networkElementsIntroducer.width() + 50, 0, getWidth() - this.networkElementsIntroducer.width() - 50, getHeight() - 300);
     }
 
     @Override

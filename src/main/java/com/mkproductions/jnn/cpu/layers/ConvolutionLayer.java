@@ -4,13 +4,13 @@ import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import org.jetbrains.annotations.NotNull;
 
 public class ConvolutionLayer extends Layer {
-    private int filterSize;
-    private int numberOfFilters;
-    private int stride;
-    private int padding;
+    private final int filterSize;
+    private final int numberOfFilters;
+    private final int stride;
+    private final int padding;
 
     public ConvolutionLayer(int filterSize, int numberOfFilters, int stride, int padding, ActivationFunction activation) {
-        super(activation);
+        super("Convolution", activation);
         this.filterSize = filterSize;
         this.numberOfFilters = numberOfFilters;
         this.stride = stride;

@@ -14,7 +14,7 @@ public class Main {
     private static final double[][] trainingInputs = { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
     private static final double[][] trainingOutputs = { { 0 }, { 1 }, { 1 }, { 0 } };
 
-    public static void main(String[] args) {
+    static void main() {
         testingXORProblem();
         //        testingMNISTCSVTrainingTesting();
         //        renderNetwork();

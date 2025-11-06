@@ -24,8 +24,8 @@ import java.util.Random;
 
 public class MNISTFrame extends JFrame {
     private static int epochCount = 10;
-    int w = 1000;
-    int h = 560;
+    final int w = 1000;
+    final int h = 560;
     private final MNISTDrawningJPanel mnistDrawningJPanel;
     private final MNISTNetworkOutputJPanel mnistNetworkOutputJPanel;
     private boolean running;
@@ -120,13 +120,13 @@ public class MNISTFrame extends JFrame {
             @Override
             public void windowOpened(WindowEvent e) {
                 super.windowOpened(e);
-                System.out.println(frameName + "has started.");
+                System.out.println(STR."\{frameName}has started.");
             }
 
             @Override
             public void windowClosed(WindowEvent e) {
                 super.windowClosed(e);
-                System.out.println(frameName + " has ended.");
+                System.out.println(STR."\{frameName} has ended.");
             }
         });
         setLayout(new GridLayout(1, 2));
@@ -202,7 +202,7 @@ public class MNISTFrame extends JFrame {
     private SaveStatus saveJNeuralNetwork(String fileName) {
         System.out.println("Neural network is being saved...");
         try {
-            String resourcePath = System.getProperty("user.dir") + "//src//main//resources//com//mkproductions//" + fileName + ".json";
+            String resourcePath = STR."\{System.getProperty("user.dir")}//src//main//resources//com//mkproductions//\{fileName}.json";
             File file = new File(resourcePath);
             if (file.exists()) {
                 int choice = JOptionPane.showConfirmDialog(this, "File already exists. Do you want to overwrite it?", "File Exists", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
@@ -230,7 +230,7 @@ public class MNISTFrame extends JFrame {
             System.out.println("Neural network saved successfully!");
             return SaveStatus.SAVED;
         } catch (IOException e) {
-            System.out.println("Error saving neural network: " + e.getMessage());
+            System.out.println(STR."Error saving neural network: \{e.getMessage()}");
             return SaveStatus.FAILED;
         }
     }
@@ -251,10 +251,10 @@ public class MNISTFrame extends JFrame {
 
     private double[][][] prepareTrainingTestingDataSet() {
         System.out.println("Please! Wait for preparing training data...");
-        String dataPath = System.getProperty("user.dir") + "//src//main//resources//com//mkproductions//";
+        String dataPath = STR."\{System.getProperty("user.dir")}//src//main//resources//com//mkproductions//";
 
-        String trainingDataPath = dataPath + "training_data//mnist_train.csv";
-        String testingDataPath = dataPath + "testing_data//mnist_test.csv";
+        String trainingDataPath = STR."\{dataPath}training_data//mnist_train.csv";
+        String testingDataPath = STR."\{dataPath}testing_data//mnist_test.csv";
 
         CSVBufferedReader csvTrainingDataBufferedReader = new CSVBufferedReader(trainingDataPath);
         CSVBufferedReader csvTestingDataBufferedReader = new CSVBufferedReader(testingDataPath);
@@ -340,8 +340,8 @@ public class MNISTFrame extends JFrame {
             }
             System.out.println();
         }
-        System.out.println("Label: " + Arrays.toString(trainingOutput));
+        System.out.println(STR."Label: \{Arrays.toString(trainingOutput)}");
         double[] prediction = jNeuralNetwork.processInputs(trainingInput);
-        System.out.println("Prediction: " + Arrays.toString(prediction));
+        System.out.println(STR."Prediction: \{Arrays.toString(prediction)}");
     }
 }

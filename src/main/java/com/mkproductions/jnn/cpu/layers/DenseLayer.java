@@ -6,7 +6,7 @@ public class DenseLayer extends Layer {
     private final int numberOfNodes;
 
     public DenseLayer(int numberOfNodes, ActivationFunction activation) {
-        super(activation);
+        super("Dense", activation);
         this.numberOfNodes = numberOfNodes;
     }
 

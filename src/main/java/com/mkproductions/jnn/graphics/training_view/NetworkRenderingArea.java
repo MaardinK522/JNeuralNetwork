@@ -4,10 +4,10 @@ import java.awt.*;
 
 public class NetworkRenderingArea {
     private final Color color;
-    float x;
-    float y;
-    float width;
-    float height;
+    final float x;
+    final float y;
+    final float width;
+    final float height;
 
     public NetworkRenderingArea(float x, float y, float width, float height) {
         this.x = x;

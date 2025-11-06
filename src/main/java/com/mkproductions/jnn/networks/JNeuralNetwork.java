@@ -63,19 +63,14 @@ public class JNeuralNetwork implements Serializable {
             }
             this.outputMatrices[layerIndex] = new Tensor(this.netWorkDenseLayers[layerIndex].getNumberOfNodes(), 1);
             this.biasesMatrices[layerIndex] = new Tensor(this.outputMatrices[layerIndex].getShape()[0], this.outputMatrices[layerIndex].getShape()[1]);
-
             // Randomizing the weights and bias
             randomize(this.weightsMatrices[layerIndex]);
             randomize(this.biasesMatrices[layerIndex]);
             // Initializing the velocity matrices.
-            if (this.jNeuralNetworkOptimizer != JNeuralNetworkOptimizer.SGD) {
-                this.velocityWeightsMatrices[layerIndex] = new Tensor(this.weightsMatrices[layerIndex].getShape()[0], this.weightsMatrices[layerIndex].getShape()[1]);
-                this.velocityBiasesMatrices[layerIndex] = new Tensor(this.biasesMatrices[layerIndex].getShape()[0], this.biasesMatrices[layerIndex].getShape()[1]);
-            }
-            if (this.jNeuralNetworkOptimizer == JNeuralNetworkOptimizer.ADAM) {
-                this.momentumWeightsMatrices[layerIndex] = new Tensor(this.weightsMatrices[layerIndex].getShape()[0], this.weightsMatrices[layerIndex].getShape()[1]);
-                this.momentumBiasesMatrices[layerIndex] = new Tensor(this.biasesMatrices[layerIndex].getShape()[0], this.biasesMatrices[layerIndex].getShape()[1]);
-            }
+            this.velocityWeightsMatrices[layerIndex] = new Tensor(this.weightsMatrices[layerIndex].getShape()[0], this.weightsMatrices[layerIndex].getShape()[1]);
+            this.velocityBiasesMatrices[layerIndex] = new Tensor(this.biasesMatrices[layerIndex].getShape()[0], this.biasesMatrices[layerIndex].getShape()[1]);
+            this.momentumWeightsMatrices[layerIndex] = new Tensor(this.weightsMatrices[layerIndex].getShape()[0], this.weightsMatrices[layerIndex].getShape()[1]);
+            this.momentumBiasesMatrices[layerIndex] = new Tensor(this.biasesMatrices[layerIndex].getShape()[0], this.biasesMatrices[layerIndex].getShape()[1]);
         }
     }
 
@@ -160,7 +155,6 @@ public class JNeuralNetwork implements Serializable {
             if (layerIndex == this.netWorkDenseLayers.length - 1 && lossFunctionable.equals(LossFunction.CATEGORICAL_CROSS_ENTROPY) && this.netWorkDenseLayers[layerIndex].getActivationFunction()
                     .equals(ActivationFunction.SOFTMAX)) {
                 biasesGradients[layerIndex] = Tensor.subtract(outputTensor, Tensor.transpose(targetTensor));
-
             } else {
                 if (layerIndex == this.netWorkDenseLayers.length - 1) {
                     errorTensor = this.lossFunctionable.getDerivativeTensor(outputTensor, Tensor.transpose(targetTensor));
