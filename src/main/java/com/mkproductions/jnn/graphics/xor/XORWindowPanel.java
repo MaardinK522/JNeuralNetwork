@@ -4,7 +4,7 @@ import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.entity.Mapper;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
-import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
+import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 import com.mkproductions.jnn.networks.JNeuralNetwork;
 
 import javax.swing.*;
@@ -22,8 +22,8 @@ public class XORWindowPanel extends JPanel {
                 new DenseLayer(1, ActivationFunction.SIGMOID) // Output Layer
         };
         this.jNeuralNetwork = new JNeuralNetwork( // Neural Network.
-                LossFunction.CATEGORICAL_CROSS_ENTROPY, // Loss function of the network.
-                JNeuralNetworkOptimizer.ADAM, // Optimizer
+                LossFunction.MEAN_ABSOLUTE_ERROR, // Loss function of the network.
+                JNetworkOptimizer.ADAM, // Optimizer
                 2, // Output nodes
                 networkDenseLayers // Layers
         );
@@ -57,7 +57,7 @@ public class XORWindowPanel extends JPanel {
             throw new RuntimeException(e);
         }
         g.setColor(Color.white);
-        g.drawString("Learning rate: " + this.jNeuralNetwork.getLearningRate(), 10, 10);
+        g.drawString(STR."Learning rate: \{this.jNeuralNetwork.getLearningRate()}", 10, 10);
     }
 
     public int getCellCount() {
@@ -70,6 +70,6 @@ public class XORWindowPanel extends JPanel {
 
     public void printAccuracy() {
         double accuracy = this.jNeuralNetwork.calculateAccuracy(this.trainingInputs, this.trainingOutputs);
-        System.out.println("Accuracy of the network: " + accuracy);
+        System.out.println(STR."Accuracy of the network: \{accuracy}");
     }
 }

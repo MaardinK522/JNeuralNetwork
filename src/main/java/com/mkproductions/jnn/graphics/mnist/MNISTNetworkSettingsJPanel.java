@@ -2,7 +2,7 @@ package com.mkproductions.jnn.graphics.mnist;
 
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.networks.JNeuralNetwork;
-import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
+import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 public class MNISTNetworkSettingsJPanel extends JPanel {
     private final JComboBox<LossFunction> lossFunctionComboBox = new JComboBox<>();
-    private final JComboBox<JNeuralNetworkOptimizer> optimizerComboBox = new JComboBox<>();
+    private final JComboBox<JNetworkOptimizer> optimizerComboBox = new JComboBox<>();
     private final JComboBox<Boolean> debugModeStatus = new JComboBox<>();
     private final JComboBox<Boolean> autoTrainingModeStatus = new JComboBox<>();
     private final JTextField learningRateTextField = new JTextField(10);
@@ -27,7 +27,7 @@ public class MNISTNetworkSettingsJPanel extends JPanel {
         JButton saveNeuralNetworkButton = new JButton("Save Neural Network");
 
         lossFunctionComboBox.setModel(new DefaultComboBoxModel<>(LossFunction.values()));
-        optimizerComboBox.setModel(new DefaultComboBoxModel<>(JNeuralNetworkOptimizer.values()));
+        optimizerComboBox.setModel(new DefaultComboBoxModel<>(JNetworkOptimizer.values()));
         debugModeStatus.setModel(new DefaultComboBoxModel<>(new Boolean[] { true, false }));
         autoTrainingModeStatus.setModel(new DefaultComboBoxModel<>(new Boolean[] { true, false }));
         learningRateTextField.setText("" + jNeuralNetwork.getLearningRate());

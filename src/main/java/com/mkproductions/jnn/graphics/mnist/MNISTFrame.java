@@ -9,7 +9,7 @@ import com.mkproductions.jnn.cpu.CSVBufferedReader;
 import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
-import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
+import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 import com.mkproductions.jnn.networks.JNeuralNetwork;
 
 import javax.swing.*;
@@ -169,7 +169,7 @@ public class MNISTFrame extends JFrame {
         return jNeuralNetwork.getLearningRate();
     }
 
-    public static JNeuralNetworkOptimizer getJNeuralNetworkOptimizer() {
+    public static JNetworkOptimizer getJNeuralNetworkOptimizer() {
         return jNeuralNetwork.getjNeuralNetworkOptimizer();
     }
 
@@ -186,11 +186,13 @@ public class MNISTFrame extends JFrame {
         networkDenseLayers = new DenseLayer[] { // Layer arrays.
                 //                new Layer(256, ActivationFunction.RE_LU), // ReLu layer
                 new DenseLayer(128, ActivationFunction.RE_LU), // ReLu layer
-                new DenseLayer(10, ActivationFunction.SOFTMAX), // Sigmoid layer
+                new DenseLayer(128, ActivationFunction.RE_LU), // ReLu layer
+                new DenseLayer(128, ActivationFunction.RE_LU), // ReLu layer
+                new DenseLayer(10, ActivationFunction.SIGMOID), // Sigmoid layer
         };
         jNeuralNetwork = new JNeuralNetwork( // Neural Network.
-                LossFunction.MEAN_SQUARED_ERROR,//Loss Function
-                JNeuralNetworkOptimizer.ADAM, // Optimizer
+                LossFunction.LOG_COSH,//Loss Function
+                JNetworkOptimizer.ADAM, // Optimizer
                 28 * 28, // Input nodes
                 networkDenseLayers // Network Layers.
         );

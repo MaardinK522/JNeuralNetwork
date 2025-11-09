@@ -13,6 +13,7 @@ import com.mkproductions.jnn.gpu.solver.ActivationFunctionSolver;
 import com.mkproductions.jnn.gpu.TaskGraphMatrixSolver;
 import com.mkproductions.jnn.networks.JSequential;
 import com.mkproductions.jnn.networks.JGPUNeuralNetwork;
+import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 import org.jetbrains.annotations.NotNull;
 import uk.ac.manchester.tornado.api.*;
 import uk.ac.manchester.tornado.api.enums.DataTransferMode;
@@ -42,18 +43,20 @@ public class Demo {
         PoolingLayer poolingLayer = new PoolingLayer(4, 1, PoolingLayer.PoolingLayerType.MAX);
         FlattenLayer flattenLayer = new FlattenLayer();
         DenseLayer dense = new DenseLayer(10, ActivationFunction.RE_LU);
+        int[] inputShape = new int[] { 3, 28, 28 };
         // Step 2: Create the CNN
-        JSequential cnn = new JSequential(3, 28, 28, conv2, poolingLayer, conv1, flattenLayer, dense);
+        JSequential cnn = new JSequential(inputShape, LossFunction.BINARY_CROSS_ENTROPY, JNetworkOptimizer.ADAM, conv2, poolingLayer, conv1, flattenLayer, dense);
 
         // Step 3: Create a dummy input tensor
         Tensor input = new Tensor(3, 28, 28);
         JSequential.randomize(input);
         // Step 4: Forward propagate
-        Tensor result = cnn.forwardPropagation(input);
+        //        Tensor result = ;
+        cnn.forwardPropagation(input);
 
         // Step 5: Print output
-        System.out.println(STR."Output shape: \{Arrays.toString(result.getShape())}");
-        System.out.println(STR."Output data: \{Arrays.toString(result.getData())}");
+        //        System.out.println(STR."Output shape: \{Arrays.toString(result.getShape())}");
+        //        System.out.println(STR."Output data: \{Arrays.toString(result.getData())}");
     }
 
     private static void testingTensorOperations() {

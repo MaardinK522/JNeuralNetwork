@@ -3,7 +3,7 @@ package com.mkproductions;
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
-import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
+import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 import com.mkproductions.jnn.graphics.mnist.MNISTFrame;
 import com.mkproductions.jnn.graphics.training_view.NeuralNetworkTrainingViewerJFrame;
 import com.mkproductions.jnn.graphics.xor.XORFrame;
@@ -15,8 +15,8 @@ public class Main {
     private static final double[][] trainingOutputs = { { 0 }, { 1 }, { 1 }, { 0 } };
 
     static void main() {
-        testingXORProblem();
-        //        testingMNISTCSVTrainingTesting();
+//        testingXORProblem();
+                testingMNISTCSVTrainingTesting();
         //        renderNetwork();
     }
 
@@ -29,22 +29,13 @@ public class Main {
         }
     }
 
-    @NotNull
-    private static JNeuralNetwork getjNeuralNetwork() {
-        DenseLayer[] denseLayers = new DenseLayer[] { new DenseLayer(32, ActivationFunction.SIGMOID), new DenseLayer(64, ActivationFunction.SIGMOID), new DenseLayer(128, ActivationFunction.SIGMOID),
-                new DenseLayer(10, ActivationFunction.SOFTMAX) };
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.ABSOLUTE_ERROR, JNeuralNetworkOptimizer.SGD_MOMENTUM, 28 * 28, denseLayers);
-        jNeuralNetwork.setLearningRate(0.01F);
-        return jNeuralNetwork;
-    }
-
     public static void testingXORProblem() {
         XORFrame graphicsFrame = new XORFrame("Main Graphics");
         graphicsFrame.startRendering();
     }
 
     private static void renderNetwork() {
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.MEAN_SQUARED_ERROR, JNeuralNetworkOptimizer.SGD_MOMENTUM, 2, new DenseLayer(4, ActivationFunction.SIGMOID),
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.MEAN_SQUARED_ERROR, JNetworkOptimizer.SGD_MOMENTUM, 2, new DenseLayer(4, ActivationFunction.SIGMOID),
                 new DenseLayer(4, ActivationFunction.SIGMOID), new DenseLayer(1, ActivationFunction.SIGMOID));
         new NeuralNetworkTrainingViewerJFrame(jNeuralNetwork, trainingInputs, trainingOutputs).startRendering();
     }

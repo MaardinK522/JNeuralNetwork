@@ -5,7 +5,7 @@ import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
-import com.mkproductions.jnn.optimzers.JNeuralNetworkOptimizer;
+import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -25,7 +25,7 @@ public class JNeuralNetwork implements Serializable {
     private final Tensor[] outputMatrices;
     private LossFunctionAble lossFunctionable;
 
-    private JNeuralNetworkOptimizer jNeuralNetworkOptimizer;
+    private JNetworkOptimizer jNetworkOptimizer;
 
     private boolean debugMode = false;
 
@@ -37,9 +37,9 @@ public class JNeuralNetwork implements Serializable {
     private int adamSteps = 0;
     private final Random random = new SecureRandom();
 
-    public JNeuralNetwork(LossFunctionAble lossFunctionable, JNeuralNetworkOptimizer jNeuralNetworkOptimizer, int numberOfInputNode, DenseLayer... netWorkDenseLayers) {
+    public JNeuralNetwork(LossFunctionAble lossFunctionable, JNetworkOptimizer jNetworkOptimizer, int numberOfInputNode, DenseLayer... netWorkDenseLayers) {
         this.lossFunctionable = lossFunctionable;
-        this.jNeuralNetworkOptimizer = jNeuralNetworkOptimizer;
+        this.jNetworkOptimizer = jNetworkOptimizer;
         // Storing the design of the Neural Network
         this.learningRate = 0.01;
         this.numberOfInputNode = numberOfInputNode;
@@ -86,7 +86,7 @@ public class JNeuralNetwork implements Serializable {
         this.momentumWeightsMatrices = jNeuralNetwork.momentumWeightsMatrices;
         this.momentumBiasesMatrices = jNeuralNetwork.momentumBiasesMatrices;
         this.lossFunctionable = jNeuralNetwork.lossFunctionable;
-        this.jNeuralNetworkOptimizer = jNeuralNetwork.jNeuralNetworkOptimizer;
+        this.jNetworkOptimizer = jNeuralNetwork.jNetworkOptimizer;
         this.momentumFactorBeta1 = jNeuralNetwork.getMomentumFactorBeta1();
         this.momentumFactorBeta2 = jNeuralNetwork.getMomentumFactorBeta2();
         this.debugMode = jNeuralNetwork.debugMode;
@@ -108,7 +108,7 @@ public class JNeuralNetwork implements Serializable {
         }
     }
 
-    private Tensor[] forwardPropagation(double[] inputs) {
+    private void forwardPropagation(double[] inputs) {
         Tensor inputTensor = new Tensor(inputs, inputs.length, 1); //new Tensor(new double[][] { inputs });
         for (int layerIndex = 0; layerIndex < this.weightsMatrices.length; layerIndex++) {
             if (layerIndex == 0) {
@@ -118,7 +118,7 @@ public class JNeuralNetwork implements Serializable {
             }
             this.outputMatrices[layerIndex] = getAppliedActivationFunctionTensor(this.outputMatrices[layerIndex], this.netWorkDenseLayers[layerIndex].getActivationFunction());
         }
-        return this.outputMatrices;
+        //        return this.outputMatrices;
     }
 
     /**
@@ -130,7 +130,7 @@ public class JNeuralNetwork implements Serializable {
      */
     public double[] processInputs(double @NotNull [] inputs) {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
-        Tensor[] outputMatrices = this.forwardPropagation(inputs);
+        this.forwardPropagation(inputs);
         double[] outputs = new double[this.netWorkDenseLayers[this.netWorkDenseLayers.length - 1].getNumberOfNodes()];
         for (int a = 0; a < outputs.length; a++) {
             outputs[a] = outputMatrices[this.netWorkDenseLayers.length - 1].getEntry(a, 0);
@@ -142,7 +142,7 @@ public class JNeuralNetwork implements Serializable {
         Tensor[] biasesGradients = new Tensor[this.netWorkDenseLayers.length];
         Tensor[] weightsGradients = new Tensor[this.netWorkDenseLayers.length];
         Tensor targetTensor = new Tensor(targets, 1, targets.length);
-        Tensor[] outputMatrices = forwardPropagation(inputs);
+        forwardPropagation(inputs);
         Tensor outputTensor = outputMatrices[netWorkDenseLayers.length - 1];
 
         // Initialize error Tensor (will be set in the first iteration)
@@ -240,7 +240,7 @@ public class JNeuralNetwork implements Serializable {
 
             Tensor newWeightsVelocityTensor = this.velocityWeightsMatrices[layerIndex];
             Tensor rootWithVelocityWeightsTensor = Tensor.tensorMapping(deltaWeightsTensor[layerIndex],
-                    ((flatIndex, value) -> this.learningRate * value / Math.sqrt(newWeightsVelocityTensor.getEntry(flatIndex) + this.epsilonRMSProp)));
+                    ((flatIndex, value) -> this.learningRate * value / Math.sqrt(newWeightsVelocityTensor.getData()[flatIndex] + this.epsilonRMSProp)));
             //            Tensor.tensorMapping(deltaWeightsTensor[layerIndex], (r, c, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(newWeightsVelocityTensor.getEntry(r, c) + this.epsilonRMSProp));
 
             // Biases
@@ -356,7 +356,7 @@ public class JNeuralNetwork implements Serializable {
             double[] trainingOutput = trainingOutputs[randomIndex];
             //            System.out.println("Training inputs: " + Arrays.toString(trainingInput));
             //            System.out.println("Training outputs: " + Arrays.toString(trainingOutput));
-            switch (this.jNeuralNetworkOptimizer) {
+            switch (this.jNetworkOptimizer) {
                 case SGD -> backPropagateSGD(trainingInput, trainingOutput);
                 case SGD_MOMENTUM -> backPropagateSGDWithMomentum(trainingInput, trainingOutput);
                 case RMS_PROP -> backPropagateRMSProp(trainingInput, trainingOutput);
@@ -532,8 +532,8 @@ public class JNeuralNetwork implements Serializable {
         return this;
     }
 
-    public JNeuralNetworkOptimizer getjNeuralNetworkOptimizer() {
-        return jNeuralNetworkOptimizer;
+    public JNetworkOptimizer getjNeuralNetworkOptimizer() {
+        return jNetworkOptimizer;
     }
 
     public JNeuralNetwork setLossFunctionAble(LossFunctionAble lossFunctionAble) {
@@ -549,8 +549,8 @@ public class JNeuralNetwork implements Serializable {
         return numberOfInputNode;
     }
 
-    public JNeuralNetwork setJNeuralNetworkOptimizer(JNeuralNetworkOptimizer jNeuralNetworkOptimizer) {
-        this.jNeuralNetworkOptimizer = jNeuralNetworkOptimizer;
+    public JNeuralNetwork setJNeuralNetworkOptimizer(JNetworkOptimizer jNetworkOptimizer) {
+        this.jNetworkOptimizer = jNetworkOptimizer;
         return this;
     }
 

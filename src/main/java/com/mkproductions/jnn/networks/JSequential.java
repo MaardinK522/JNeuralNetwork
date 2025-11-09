@@ -7,6 +7,9 @@ import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.layers.FlattenLayer;
 import com.mkproductions.jnn.cpu.layers.Layer;
 import com.mkproductions.jnn.cpu.layers.PoolingLayer;
+import com.mkproductions.jnn.lossFunctions.LossFunction;
+import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
+import org.jetbrains.annotations.TestOnly;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -16,21 +19,30 @@ public class JSequential {
     private final int inputDepth;
     private final int inputWidth;
     private final int inputHeight;
+    private final Layer[] networkLayers;
     private final Tensor[] kernelTensors;
     private final Tensor[] biasTensors;
     private final Tensor[] outputTensors;
-    private final Layer[] networkLayers;
+    private final Tensor[] rawOutputTensors;
+    private int[][][] maxPoolMasks;
     private static final Random random = new SecureRandom();
+    private final LossFunction lossFunction;
+    private final JNetworkOptimizer optimizer;
+    private double learningRate;
 
-    public JSequential(int inputDepth, int inputWidth, int inputHeight, Layer... networkLayers) {
-        this.inputDepth = inputDepth;
-        this.inputWidth = inputWidth;
-        this.inputHeight = inputHeight;
+    public JSequential(int[] inputShape, LossFunction lossFunction, JNetworkOptimizer optimizer, Layer... networkLayers) {
+        this.inputDepth = inputShape[0];
+        this.inputWidth = inputShape[1];
+        this.inputHeight = inputShape[2];
         this.networkLayers = networkLayers;
         this.kernelTensors = new Tensor[this.networkLayers.length];
         this.biasTensors = new Tensor[this.networkLayers.length];
         this.outputTensors = new Tensor[this.networkLayers.length];
-
+        this.rawOutputTensors = new Tensor[this.networkLayers.length];
+        this.maxPoolMasks = new int[this.networkLayers.length][][];
+        this.lossFunction = lossFunction;
+        this.optimizer = optimizer;
+        this.learningRate = 0.01;
         int currentInputDepth = inputDepth;
         int currentInputWidth = inputWidth;
         int currentInputHeight = inputHeight;
@@ -104,7 +116,7 @@ public class JSequential {
         }
     }
 
-    public Tensor forwardPropagation(Tensor input) {
+    public void forwardPropagation(Tensor input) {
         if (input.getRank() != 3) {
             throw new IllegalArgumentException("Input must be 3D tensor");
         } else if (this.inputDepth != input.getShape()[0] || this.inputHeight != input.getShape()[1] || this.inputWidth != input.getShape()[2]) {
@@ -132,7 +144,7 @@ public class JSequential {
                     // Accumulator for each convolution.
                     Tensor accumulated = null;
                     for (int d = 0; d < currentInput.getShape()[0]; d++) {
-                        Tensor inputSlice = input.slice(0, d, d + 1).reshape(input.getShape()[1], input.getShape()[2]);
+                        Tensor inputSlice = currentInput.slice(0, d, d + 1).reshape(currentInput.getShape()[1], currentInput.getShape()[2]);
                         Tensor filterSlice = filter.slice(0, d, d + 1).reshape(convolutionLayer.getFilterSize(), convolutionLayer.getFilterSize());
                         Tensor conv2D = Tensor.convolve2D(inputSlice, filterSlice, convolutionLayer.getStride(), convolutionLayer.getPadding());
                         if (accumulated == null) {
@@ -149,6 +161,7 @@ public class JSequential {
                     }
                 }
                 addBiasToConvOutput(output, this.biasTensors[layerIndex], this.outputTensors[layerIndex]);
+                this.rawOutputTensors[layerIndex] = output;
                 this.outputTensors[layerIndex].mapTensor(this.networkLayers[layerIndex].getActivationFunction().getEquation());
                 currentInput = this.outputTensors[layerIndex];
             } else if (this.networkLayers[layerIndex] instanceof PoolingLayer poolingLayer) {
@@ -159,20 +172,84 @@ public class JSequential {
                 }
                 currentInput = this.outputTensors[layerIndex];
             } else if (this.networkLayers[layerIndex] instanceof FlattenLayer) {
-                this.outputTensors[layerIndex] = this.outputTensors[layerIndex - 1].reshape(this.outputTensors[layerIndex - 1].getData().length);
+                this.outputTensors[layerIndex] = currentInput.reshape(currentInput.getData().length);
                 currentInput = this.outputTensors[layerIndex];
             } else if (this.networkLayers[layerIndex] instanceof DenseLayer denseLayer) {
-                int inputNode = this.outputTensors[layerIndex - 1].getShape()[0];
+                int inputNode = currentInput.getShape()[0];
                 this.outputTensors[layerIndex] = Tensor.matrixMultiplication(this.outputTensors[layerIndex - 1].reshape(1, inputNode), this.kernelTensors[layerIndex]);
                 this.outputTensors[layerIndex] = Tensor.add(this.outputTensors[layerIndex], this.biasTensors[layerIndex].reshape(1, this.biasTensors[layerIndex].getShape()[1]));
-                this.outputTensors[layerIndex] = getAppliedActivationMatrices(this.outputTensors[layerIndex], denseLayer.getActivationFunction());
+                this.rawOutputTensors[layerIndex] = this.outputTensors[layerIndex];
+                this.outputTensors[layerIndex] = getAppliedActivationTensors(this.outputTensors[layerIndex], denseLayer.getActivationFunction());
                 currentInput = this.outputTensors[layerIndex];
             }
             System.out.println(
                     STR."\{this.networkLayers[layerIndex].getName()} Layer index: \{layerIndex},\n\tOutput shape: \{this.outputTensors[layerIndex]},\n\t Layer name:\{this.networkLayers[layerIndex].getActivationFunction()
                             .name()}");
         }
-        return this.outputTensors[this.networkLayers.length - 1];
+        //        return this.outputTensors[this.networkLayers.length - 1];
+    }
+
+//    private void backPropagation(Tensor input, Tensor target) {
+//        int outputIndex = this.networkLayers.length - 1;
+//        Tensor outputTensor = this.outputTensors[outputIndex];
+//        Tensor outputLoss = this.lossFunction.getDerivativeTensor(outputTensor, target);
+//
+//        Tensor currentDelta;
+//        if (this.networkLayers[outputIndex].getActivationFunction().equals(ActivationFunction.SOFTMAX) && this.lossFunction.equals(LossFunction.CATEGORICAL_CROSS_ENTROPY)) {
+//            currentDelta = Tensor.subtract(outputTensor, target);
+//        } else {
+//            Tensor lossOutputTensor = this.lossFunction.getDerivativeTensor(outputLoss, target);
+//            Tensor preActivated = this.rawOutputTensors[outputIndex];
+//            Tensor deactivatedOutput = getDeactivatedTensor(preActivated, this.networkLayers[this.networkLayers.length - 1].getActivationFunction());
+//            currentDelta = Tensor.elementWiseMultiplication(lossOutputTensor, deactivatedOutput);
+//        }
+//
+//        for (int layerIndex = this.networkLayers.length - 1; layerIndex >= 0; layerIndex--) {
+//            Layer layer = this.networkLayers[layerIndex];
+//            Tensor inputPrevious = this.outputTensors[layerIndex];
+//            switch (layer) {
+//                case DenseLayer denseLayer -> {
+//                    currentDelta = backwardDense(layerIndex, denseLayer, currentDelta, inputPrevious);
+//                }
+//                case FlattenLayer flattenLayer -> {
+//                    currentDelta = backwardFlatten(layerIndex, flattenLayer, currentDelta, inputPrevious);
+//                }
+//                case PoolingLayer poolingLayer -> {
+//                    currentDelta - backPooling(layerIndex, poolingLayer, currentDelta, inputPrevious);
+//                }
+//                case ConvolutionLayer convolutionLayer -> {
+//                    currentDelta = backwardConvolution(layerIndex, convolutionLayer, currentDelta, inputPrevious);
+//                }
+//                default -> {
+//                    throw new IllegalArgumentException("Unsupported layer type detected in network architecture.");
+//                }
+//            }
+//        }
+//    }
+
+    private Tensor backwardDense(int layerIndex, DenseLayer denseLayer, Tensor currentDelta, Tensor inputPrevious) {
+        if (layerIndex < this.networkLayers.length - 1) {
+            Tensor preActivated = this.rawOutputTensors[layerIndex];
+            Tensor deactivatedOutput = getDeactivatedTensor(preActivated, this.networkLayers[layerIndex + 1].getActivationFunction());
+            currentDelta = Tensor.elementWiseMultiplication(currentDelta, deactivatedOutput);
+        }
+
+        Tensor deltaWeights = Tensor.matrixMultiplication(currentDelta.reshape(currentDelta.getData().length, 1), inputPrevious.reshape(1, inputPrevious.getData().length));
+
+        Tensor deltaBias = currentDelta.copy();
+        if (layerIndex > 0) {
+            Tensor weights = this.kernelTensors[layerIndex - 1];
+            currentDelta = Tensor.elementWiseMultiplication(Tensor.transpose(weights), currentDelta);
+        }
+        deltaWeights = Tensor.scalarMultiply(deltaBias, this.learningRate);
+        deltaWeights = Tensor.scalarMultiply(deltaWeights, this.learningRate);
+        this.kernelTensors[layerIndex] = Tensor.add(this.kernelTensors[layerIndex], deltaWeights);
+        this.biasTensors[layerIndex] = Tensor.add(this.biasTensors[layerIndex], deltaBias);
+        return currentDelta;
+    }
+
+    private Tensor backwardFlatten(int layerIndex, FlattenLayer flattenLayer, Tensor currentDelta, Tensor inputPrevious) {
+        return currentDelta.reshape(inputPrevious.getShape());
     }
 
     private static void addBiasToConvOutput(Tensor output, Tensor bias, Tensor result) {
@@ -298,11 +375,18 @@ public class JSequential {
         return output;
     }
 
-    private Tensor getAppliedActivationMatrices(Tensor matrix, ActivationFunction activationFunction) {
+    private Tensor getAppliedActivationTensors(Tensor matrix, ActivationFunction activationFunction) {
         if (activationFunction.name().equals(ActivationFunction.SOFTMAX.name())) {
             return null;
         }
         return Tensor.tensorMapping(matrix, activationFunction.getEquation());
+    }
+
+    private Tensor getDeactivatedTensor(Tensor activatedTensor, ActivationFunction activationFunction) {
+        if (activationFunction.equals(ActivationFunction.SOFTMAX)) {
+            throw new IllegalArgumentException("Softmax yet not implemented");
+        }
+        return Tensor.tensorMapping(activatedTensor, activationFunction.getDerivative());
     }
 
     public static void randomize(Tensor tensor) {
