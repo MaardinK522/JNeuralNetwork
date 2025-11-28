@@ -4,23 +4,23 @@ import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
 import com.mkproductions.jnn.cpu.entity.Tensor;
 
 public enum LossFunction implements LossFunctionAble {
-    ABSOLUTE_ERROR {
-        @Override
-        public Tensor getLossFunctionTensor(Tensor predictionTensor, Tensor targetMatrix) {
-            Tensor.validateTensors(predictionTensor, targetMatrix);
-            // Calculate the squared error for each element in the matrix.
-            return Tensor.tensorMapping(predictionTensor, (flatIndex, prediction) -> (targetMatrix.getData()[flatIndex] - prediction));
-        }
-
-        @Override
-        public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
-            Tensor.validateTensors(prediction, target);
-            return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
-                double error = target.getData()[flatIndex] - prediction.getData()[flatIndex];
-                return error >= 0 ? 1 : -1;
-            });
-        }
-    }, // Absolute Error
+    //    ABSOLUTE_ERROR {
+//        @Override
+//        public Tensor getLossFunctionTensor(Tensor predictionTensor, Tensor targetMatrix) {
+//            Tensor.validateTensors(predictionTensor, targetMatrix);
+//            // Calculate the squared error for each element in the matrix.
+//            return Tensor.tensorMapping(predictionTensor, (flatIndex, prediction) -> (targetMatrix.getData()[flatIndex] - prediction));
+//        }
+//
+//        @Override
+//        public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
+//            Tensor.validateTensors(prediction, target);
+//            return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
+//                double error = target.getData()[flatIndex] - prediction.getData()[flatIndex];
+//                return error >= 0 ? 1 : -1;
+//            });
+//        }
+//    }, // Absolute Error
     MEAN_SQUARED_ERROR {
         @Override
         public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {

@@ -32,7 +32,7 @@ public class JNeuralNetwork implements Serializable {
     private double learningRate;
     private double momentumFactorBeta1;
     private double momentumFactorBeta2;
-    private final double epsilonRMSProp = Math.pow(10, -8);
+    private final double epsilon = Math.pow(10, -8);
     private int epochCount = 0;
     private int adamSteps = 0;
     private final Random random = new SecureRandom();
@@ -56,11 +56,7 @@ public class JNeuralNetwork implements Serializable {
         this.momentumFactorBeta2 = 0.999;
         // Assign weights and biases and velocity to Tensor arrays
         for (int layerIndex = 0; layerIndex < this.weightsMatrices.length; layerIndex++) {
-            if (layerIndex == 0) {
-                this.weightsMatrices[layerIndex] = new Tensor(this.netWorkDenseLayers[layerIndex].getNumberOfNodes(), this.numberOfInputNode);
-            } else {
-                this.weightsMatrices[layerIndex] = new Tensor(this.netWorkDenseLayers[layerIndex].getNumberOfNodes(), this.netWorkDenseLayers[layerIndex - 1].getNumberOfNodes());
-            }
+            this.weightsMatrices[layerIndex] = new Tensor(this.netWorkDenseLayers[layerIndex].getNumberOfNodes(), layerIndex == 0 ? this.numberOfInputNode : this.netWorkDenseLayers[layerIndex - 1].getNumberOfNodes());
             this.outputMatrices[layerIndex] = new Tensor(this.netWorkDenseLayers[layerIndex].getNumberOfNodes(), 1);
             this.biasesMatrices[layerIndex] = new Tensor(this.outputMatrices[layerIndex].getShape()[0], this.outputMatrices[layerIndex].getShape()[1]);
             // Randomizing the weights and bias
@@ -118,17 +114,15 @@ public class JNeuralNetwork implements Serializable {
             }
             this.outputMatrices[layerIndex] = getAppliedActivationFunctionTensor(this.outputMatrices[layerIndex], this.netWorkDenseLayers[layerIndex].getActivationFunction());
         }
-        //        return this.outputMatrices;
     }
 
     /**
      * Process inputs and produces outputs as per the network schema.
      *
-     * @param inputs
-     *         A double array to predict the output.
+     * @param inputs A double array to predict the output.
      * @return double array of output predicted by the network.
      */
-    public double[] processInputs(double @NotNull [] inputs) {
+    public double[] processInputs(double[] inputs) {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
         this.forwardPropagation(inputs);
         double[] outputs = new double[this.netWorkDenseLayers[this.netWorkDenseLayers.length - 1].getNumberOfNodes()];
@@ -146,7 +140,7 @@ public class JNeuralNetwork implements Serializable {
         Tensor outputTensor = outputMatrices[netWorkDenseLayers.length - 1];
 
         // Initialize error Tensor (will be set in the first iteration)
-        Tensor errorTensor = null;
+        Tensor gradients = null;
 
         // Layer loop
         for (int layerIndex = this.netWorkDenseLayers.length - 1; layerIndex >= 0; layerIndex--) {
@@ -157,37 +151,35 @@ public class JNeuralNetwork implements Serializable {
                 biasesGradients[layerIndex] = Tensor.subtract(outputTensor, Tensor.transpose(targetTensor));
             } else {
                 if (layerIndex == this.netWorkDenseLayers.length - 1) {
-                    errorTensor = this.lossFunctionable.getDerivativeTensor(outputTensor, Tensor.transpose(targetTensor));
+                    gradients = this.lossFunctionable.getDerivativeTensor(outputTensor, Tensor.transpose(targetTensor));
                 }
-                Tensor activationDerivative = getDactivatedActivationFunctionTensor(outputMatrices[layerIndex], this.netWorkDenseLayers[layerIndex].getActivationFunction());
+                Tensor activationDerivative = getDeactivatedActivationFunctionTensor(outputMatrices[layerIndex], this.netWorkDenseLayers[layerIndex].getActivationFunction());
                 //  Handle Softmax Jacobian with Tensor multiplication
-                assert errorTensor != null;
+                assert gradients != null;
                 if (this.netWorkDenseLayers[layerIndex].getActivationFunction().equals(ActivationFunction.SOFTMAX)) {
-                    biasesGradients[layerIndex] = Tensor.matrixMultiplication(activationDerivative, errorTensor);
+                    biasesGradients[layerIndex] = Tensor.matrixMultiplication(activationDerivative, gradients);
                 } else {
-                    biasesGradients[layerIndex] = Tensor.elementWiseMultiplication(activationDerivative, errorTensor);
+                    biasesGradients[layerIndex] = Tensor.elementWiseMultiplication(activationDerivative, gradients);
                 }
             }
 
             // 3. Propagate error backwards (for the next layer in the loop)
             if (layerIndex > 0) {
-                errorTensor = Tensor.matrixMultiplication(Tensor.transpose(this.weightsMatrices[layerIndex]), biasesGradients[layerIndex]);
+                gradients = Tensor.matrixMultiplication(Tensor.transpose(this.weightsMatrices[layerIndex]), biasesGradients[layerIndex]);
             }
 
             // 4. Calculate the weight gradients
             Tensor previousOutputTensor = (layerIndex == 0) ? new Tensor(inputs, 1, inputs.length) : Tensor.transpose(outputMatrices[layerIndex - 1]);
             weightsGradients[layerIndex] = Tensor.matrixMultiplication(biasesGradients[layerIndex], previousOutputTensor);
         }
-        return new Tensor[][] { biasesGradients, weightsGradients };
+        return new Tensor[][]{biasesGradients, weightsGradients};
     }
 
     /**
      * Function to perform back-propagate and adjusts weights and biases as per the given inputs with targets.
      *
-     * @param inputs
-     *         2D array of inputs to be learned by network.
-     * @param targetOutput
-     *         2D array to train the network as per inputs index.
+     * @param inputs       2D array of inputs to be learned by network.
+     * @param targetOutput 2D array to train the network as per inputs index.
      */
     private void backPropagateSGD(double @NotNull [] inputs, double[] targetOutput) {
         this.generateIfInvalidParametersExceptionGenerates(inputs.length);
@@ -240,8 +232,7 @@ public class JNeuralNetwork implements Serializable {
 
             Tensor newWeightsVelocityTensor = this.velocityWeightsMatrices[layerIndex];
             Tensor rootWithVelocityWeightsTensor = Tensor.tensorMapping(deltaWeightsTensor[layerIndex],
-                    ((flatIndex, value) -> this.learningRate * value / Math.sqrt(newWeightsVelocityTensor.getData()[flatIndex] + this.epsilonRMSProp)));
-            //            Tensor.tensorMapping(deltaWeightsTensor[layerIndex], (r, c, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(newWeightsVelocityTensor.getEntry(r, c) + this.epsilonRMSProp));
+                    ((flatIndex, value) -> this.learningRate * value / Math.sqrt(newWeightsVelocityTensor.getData()[flatIndex] + this.epsilon)));
 
             // Biases
             Tensor squaredGradientsTensor = Tensor.tensorMapping(deltaBiasesTensor[layerIndex], (_, gradient) -> Math.pow(gradient, 2));
@@ -250,7 +241,7 @@ public class JNeuralNetwork implements Serializable {
 
             Tensor newBiasesVelocityTensor = this.velocityBiasesMatrices[layerIndex];
             Tensor rootWithVelocityBiasesTensor = Tensor.tensorMapping(deltaBiasesTensor[layerIndex],
-                    (flatIndex, value) -> this.learningRate * value / Math.sqrt(newBiasesVelocityTensor.getData()[flatIndex] + this.epsilonRMSProp));
+                    (flatIndex, value) -> this.learningRate * value / Math.sqrt(newBiasesVelocityTensor.getData()[flatIndex] + this.epsilon));
 
             //            Tensor rootWithVelocityBiasesTensor = Tensor.TensorMapping(deltaBiasesTensor[layerIndex],
             //                    (r, c, gradient) -> this.learningRate * gradient / Math.sqrt(newBiasesVelocityTensor.getEntry(r, c) + this.epsilonRMSProp));
@@ -275,13 +266,13 @@ public class JNeuralNetwork implements Serializable {
             this.velocityWeightsMatrices[layerIndex] = Tensor.add(this.velocityWeightsMatrices[layerIndex], squaredDeltaWeightsTensor);
             Tensor currentWeightVelocity = this.velocityWeightsMatrices[layerIndex];
             Tensor rootWithVelocityWegihtsTensor = Tensor.tensorMapping(deltaWeightsTensor[layerIndex],
-                    (flatIndex, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(currentWeightVelocity.getData()[flatIndex] + this.epsilonRMSProp));
+                    (flatIndex, deltaWeight) -> this.learningRate * deltaWeight / Math.sqrt(currentWeightVelocity.getData()[flatIndex] + this.epsilon));
             this.weightsMatrices[layerIndex].subtract(rootWithVelocityWegihtsTensor);
             // Biases
             this.velocityBiasesMatrices[layerIndex] = Tensor.add(this.velocityBiasesMatrices[layerIndex], squaredGradientsTensor);
             Tensor currentBiasesVelocity = this.velocityBiasesMatrices[layerIndex];
             Tensor rootWithVelocityBiasesTensor = Tensor.tensorMapping(deltaBiasesTensor[layerIndex],
-                    (flatIndex, gradient) -> this.learningRate * gradient / Math.sqrt(currentBiasesVelocity.getData()[flatIndex] + this.epsilonRMSProp));
+                    (flatIndex, gradient) -> this.learningRate * gradient / Math.sqrt(currentBiasesVelocity.getData()[flatIndex] + this.epsilon));
             this.biasesMatrices[layerIndex].subtract(rootWithVelocityBiasesTensor);
         }
     }
@@ -320,8 +311,8 @@ public class JNeuralNetwork implements Serializable {
             Tensor velocityWeightsHat = Tensor.tensorMapping(this.velocityWeightsMatrices[layerIndex], (_, v) -> v / (1 - beta_2_t));
             Tensor velocityBiasesHat = Tensor.tensorMapping(this.velocityBiasesMatrices[layerIndex], (_, v) -> v / (1 - beta_2_t));
 
-            Tensor updateWeights = Tensor.tensorMapping(momentumWeightsHat, (flatIndex, m) -> this.learningRate * m / (Math.sqrt(velocityWeightsHat.getData()[flatIndex]) + this.epsilonRMSProp));
-            Tensor updateBiases = Tensor.tensorMapping(momentumBiasesHat, (flatIndex, m) -> this.learningRate * m / (Math.sqrt(velocityBiasesHat.getData()[flatIndex]) + this.epsilonRMSProp));
+            Tensor updateWeights = Tensor.tensorMapping(momentumWeightsHat, (flatIndex, m) -> this.learningRate * m / (Math.sqrt(velocityWeightsHat.getData()[flatIndex]) + this.epsilon));
+            Tensor updateBiases = Tensor.tensorMapping(momentumBiasesHat, (flatIndex, m) -> this.learningRate * m / (Math.sqrt(velocityBiasesHat.getData()[flatIndex]) + this.epsilon));
 
             this.weightsMatrices[layerIndex].subtract(updateWeights);
             this.biasesMatrices[layerIndex].subtract(updateBiases);
@@ -331,12 +322,9 @@ public class JNeuralNetwork implements Serializable {
     /**
      * Function to train model for mass amount of training inputs and outputs with random samples.
      *
-     * @param epochs
-     *         number of back-propagation iterations performed by the model.
-     * @param trainingInputs
-     *         2D array of inputs for training the model.
-     * @param trainingOutputs
-     *         2D array of outputs for training the model.
+     * @param epochs          number of back-propagation iterations performed by the model.
+     * @param trainingInputs  2D array of inputs for training the model.
+     * @param trainingOutputs 2D array of outputs for training the model.
      */
     public void train(double[] @NotNull [] trainingInputs, double[][] trainingOutputs, int epochs) {
         if (trainingInputs[0].length != this.numberOfInputNode) {
@@ -475,7 +463,7 @@ public class JNeuralNetwork implements Serializable {
         return Tensor.tensorMapping(tensor, activationFunction.getEquation());
     }
 
-    public static Tensor getDactivatedActivationFunctionTensor(Tensor activatedTensor, @NotNull ActivationFunction activationFunction) {
+    public static Tensor getDeactivatedActivationFunctionTensor(Tensor activatedTensor, @NotNull ActivationFunction activationFunction) {
         if (activationFunction.name().equals(ActivationFunction.SOFTMAX.name())) {
             if (activatedTensor.getShape()[1] != 1) {
                 throw new IllegalArgumentException("Softmax derivative expects a single vector output.");
@@ -492,8 +480,8 @@ public class JNeuralNetwork implements Serializable {
         return Tensor.tensorMapping(activatedTensor, activationFunction.getDerivative());
     }
 
-    public double getEpsilonRMSProp() {
-        return epsilonRMSProp;
+    public double getEpsilon() {
+        return epsilon;
     }
 
     public double getMomentumFactorBeta2() {
@@ -532,7 +520,7 @@ public class JNeuralNetwork implements Serializable {
         return this;
     }
 
-    public JNetworkOptimizer getjNeuralNetworkOptimizer() {
+    public JNetworkOptimizer getJNeuralNetworkOptimizer() {
         return jNetworkOptimizer;
     }
 

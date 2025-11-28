@@ -37,7 +37,7 @@ public class XORFrame extends JFrame {
                     case KeyEvent.VK_DOWN -> {
                         if (windowPanel.getCellCount() >= 1) windowPanel.setCellCount(windowPanel.getCellCount() - 10);
                     }
-                    case KeyEvent.VK_ENTER -> windowPanel.printAccuracy();
+//                    case KeyEvent.VK_ENTER -> windowPanel.printAccuracy();
                     case KeyEvent.VK_SPACE -> running = false;
                 }
             }

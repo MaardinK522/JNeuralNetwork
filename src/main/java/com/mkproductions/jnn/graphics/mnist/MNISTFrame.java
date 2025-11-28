@@ -170,7 +170,7 @@ public class MNISTFrame extends JFrame {
     }
 
     public static JNetworkOptimizer getJNeuralNetworkOptimizer() {
-        return jNeuralNetwork.getjNeuralNetworkOptimizer();
+        return jNeuralNetwork.getJNeuralNetworkOptimizer();
     }
 
     public static Boolean getTrainNetworkStatus() {

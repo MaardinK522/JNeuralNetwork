@@ -49,7 +49,7 @@ public class MNISTNetworkSettingsJPanel extends JPanel {
         saveNeuralNetworkButton.addActionListener(_ -> saveNeuralNetwork.apply(null));
 
         lossFunctionComboBox.setSelectedItem(jNeuralNetwork.getLossFunctionable());
-        optimizerComboBox.setSelectedItem(jNeuralNetwork.getjNeuralNetworkOptimizer());
+        optimizerComboBox.setSelectedItem(jNeuralNetwork.getJNeuralNetworkOptimizer());
         debugModeStatus.setSelectedItem(jNeuralNetwork.isDebugMode());
         autoTrainingModeStatus.setSelectedItem(MNISTFrame.getTrainNetworkStatus());
         learningRateTextField.setText(String.valueOf(jNeuralNetwork.getLearningRate()));

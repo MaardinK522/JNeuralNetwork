@@ -3,6 +3,8 @@ package com.mkproductions.jnn.cpu.entity;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static java.lang.StringTemplate.STR;
+
 public class Tensor {
     private final int[] shape;
     private final int[] strides;
@@ -41,18 +43,24 @@ public class Tensor {
             throw new IllegalArgumentException("Index length must be equal to rank.");
         }
         for (int i = 0; i < tensor1.shape.length; i++) {
-            if (tensor1.shape[i] < 1 || tensor2.shape[i] < 1 || tensor1.shape[i] != tensor2.shape[i]) {
+            if (tensor1.shape[i] != tensor2.shape[i]) {
                 System.err.println(tensor1);
                 System.err.println(tensor2);
-                throw new IndexOutOfBoundsException(STR."Index out of bounds. Index: \{tensor1.shape[i]} Shape: \{tensor2.shape[i]}");
+                throw new IllegalArgumentException("Mismatch dimension.");
             }
         }
     }
 
+    /**
+     * Creates a deep copy of the tensor
+     */
     public Tensor copy() {
         return new Tensor(this.data, this.shape);
     }
 
+    /**
+     * Create a tensor of the same shape with 0.0
+     */
     public Tensor copyShape() {
         return new Tensor(this.shape);
     }
@@ -169,7 +177,7 @@ public class Tensor {
         if (tensor1.getRank() != tensor2.getRank() || tensor1.getRank() != 2) {
             System.err.println(tensor1);
             System.err.println(tensor2);
-            throw new IllegalArgumentException(STR."Matrix multiplication not possible.");
+            throw new IllegalArgumentException("Matrix multiplication not possible.");
         }
         if (tensor1.shape[1] != tensor2.shape[0]) {
             System.err.println(tensor1);

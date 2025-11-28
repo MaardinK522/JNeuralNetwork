@@ -7,7 +7,6 @@ import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.layers.FlattenLayer;
 import com.mkproductions.jnn.cpu.layers.PoolingLayer;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
-import com.mkproductions.jnn.gpu.entity.NetworkLayer;
 
 import com.mkproductions.jnn.gpu.solver.ActivationFunctionSolver;
 import com.mkproductions.jnn.gpu.TaskGraphMatrixSolver;
@@ -31,9 +30,9 @@ public class Demo {
         //        testAdditionOperationOnDevice();
         //        testMatrixMultiplicationOperationOnDevice();
         //        testingRandomNumberGenerator();
-        //        testingNetworkInitialization();
+                testingNetworkInitialization();
         //        testingInterfaceFunctions();
-        testingConvolutionNeuralNetwork();
+//        testingConvolutionNeuralNetwork();
         //        testingTensorOperations();
     }
 
@@ -73,8 +72,8 @@ public class Demo {
         var device = TornadoExecutionPlan.getDevice(1, 0);
         System.out.println(device);
         TaskGraph taskGraph = new TaskGraph("matrixOperation").transferToDevice(DataTransferMode.FIRST_EXECUTION, matrix1);
-        TaskGraphMatrixSolver.applyActivationFunction(taskGraph, "activationFunctionEquation", matrix1, ActivationFunctionSolver.NetworkActivationFunction.SIGMOID);
-        TaskGraphMatrixSolver.applyActivationFunctionDerivative(taskGraph, "activationFunctionDerivative", matrix1, ActivationFunctionSolver.NetworkActivationFunction.SIGMOID);
+        TaskGraphMatrixSolver.applyActivationFunction(taskGraph, "activationFunctionEquation", matrix1, ActivationFunction.SIGMOID);
+        TaskGraphMatrixSolver.applyActivationFunctionDerivative(taskGraph, "activationFunctionDerivative", matrix1, ActivationFunction.SIGMOID);
         taskGraph.transferToHost(DataTransferMode.EVERY_EXECUTION, matrix1);
         try (TornadoExecutionPlan plan = new TornadoExecutionPlan(taskGraph.snapshot())) {
             plan.withDevice(device).execute();
@@ -101,8 +100,13 @@ public class Demo {
     }
 
     private static @NotNull JGPUNeuralNetwork getJgpuNeuralNetwork() {
-        JGPUNeuralNetwork jgpuNeuralNetwork = new JGPUNeuralNetwork(LossFunction.BINARY_CROSS_ENTROPY, 2, new NetworkLayer(8, ActivationFunctionSolver.NetworkActivationFunction.TAN_H),
-                new NetworkLayer(8, ActivationFunctionSolver.NetworkActivationFunction.TAN_H), new NetworkLayer(1, ActivationFunctionSolver.NetworkActivationFunction.SIGMOID));
+        JGPUNeuralNetwork jgpuNeuralNetwork = new JGPUNeuralNetwork(// Network.
+                LossFunction.BINARY_CROSS_ENTROPY, // Loss function.
+                2, // Number of inputs.
+                new DenseLayer(8, ActivationFunction.SIGMOID), // Dense Layer
+                new DenseLayer(8, ActivationFunction.SIGMOID), // Dense Layer
+                new DenseLayer(1, ActivationFunction.SIGMOID)  // Dense Layer
+        );
         jgpuNeuralNetwork.initializeNetwork();
         jgpuNeuralNetwork.printData();
         System.out.println("==========================NETWORK DATA==========================");

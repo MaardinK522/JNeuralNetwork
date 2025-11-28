@@ -1,33 +1,37 @@
 package com.mkproductions.jnn.graphics.xor;
 
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
+import com.mkproductions.jnn.cpu.entity.Tensor;
 import com.mkproductions.jnn.cpu.layers.DenseLayer;
 import com.mkproductions.jnn.cpu.entity.Mapper;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
+import com.mkproductions.jnn.networks.JDenseSequential;
 import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 import com.mkproductions.jnn.networks.JNeuralNetwork;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Arrays;
 
 public class XORWindowPanel extends JPanel {
-    private double cellCount = 10;
-    private final JNeuralNetwork jNeuralNetwork;
-    private final double[][] trainingInputs = { { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } };
-    private final double[][] trainingOutputs = { { 0 }, { 1 }, { 1 }, { 0 } };
+    private double cellCount = 5;
+    private final JDenseSequential jNeuralNetwork;
+    private final Tensor[] trainingInputs = {new Tensor(new double[]{0, 0}, 2, 1), new Tensor(new double[]{1, 0}, 2, 1), new Tensor(new double[]{0, 1}, 2, 1), new Tensor(new double[]{1, 1}, 2, 1)};
+    private final Tensor[] trainingOutputs = {new Tensor(new double[]{0}, 1, 1), new Tensor(new double[]{1}, 1, 1), new Tensor(new double[]{1}, 1, 1), new Tensor(new double[]{0}, 1, 1)};
 
     public XORWindowPanel(int width, int height) {
-        DenseLayer[] networkDenseLayers = new DenseLayer[] { // Layers.
-                new DenseLayer(4, ActivationFunction.SIGMOID), // First Layer
+        DenseLayer[] networkDenseLayers = new DenseLayer[]{ // Layers.
+                new DenseLayer(4, ActivationFunction.TAN_H), // Layer
+                new DenseLayer(2, ActivationFunction.RE_LU), // Layer
                 new DenseLayer(1, ActivationFunction.SIGMOID) // Output Layer
         };
-        this.jNeuralNetwork = new JNeuralNetwork( // Neural Network.
-                LossFunction.MEAN_ABSOLUTE_ERROR, // Loss function of the network.
-                JNetworkOptimizer.ADAM, // Optimizer
-                2, // Output nodes
+        this.jNeuralNetwork = new JDenseSequential( // Neural Network.
+                LossFunction.MEAN_SQUARED_ERROR, // Loss-function of the network.
+                JNetworkOptimizer.RMS_PROP, // Optimizer
+                2, // Input nodes
                 networkDenseLayers // Layers
         );
-        this.jNeuralNetwork.setDebugMode(false);
+//        this.jNeuralNetwork.setDebugMode(false);
         setSize(width, height);
         setVisible(true);
         setBackground(Color.black);
@@ -40,19 +44,29 @@ public class XORWindowPanel extends JPanel {
         int cellSize = 10;
         for (double x = 0; x < getWidth(); x += cellSize) {
             for (double y = 0; y < getHeight(); y += cellSize) {
-                double[] inputs = { x / getWidth(), y / getHeight() };
-                double prediction = this.jNeuralNetwork.processInputs(inputs)[0];
-                if (x == 0 && y == 0) {
-                    System.out.println("Prediction: " + prediction);
+                Tensor inputs = new Tensor(new double[]{x / getWidth(), y / getHeight()}, 2, 1);
+                Tensor prediction = this.jNeuralNetwork.processInputs(inputs);
+                if (x >= getWidth() && y >= getWidth()) {
+                    System.out.println(STR."Prediction: \{prediction}");
                 }
-                int output = (int) Mapper.mapRangeToRange(prediction, 0, 1, 0, 255);
-                //                int output = (prediction < 1) ? 0 : 255;
+                int output = (int) Mapper.mapRangeToRange(prediction.getData()[0], 0, 1, 0, 255);
+//                int output = (prediction.getData()[0] < 1) ? 0 : 255;
                 g.setColor(new Color(output, output, output));
                 g.fillRect((int) x, (int) y, cellSize, cellSize);
             }
         }
+        Tensor[] inputs = new Tensor[]{new Tensor(new double[]{0, 0}, 2, 1), new Tensor(new double[]{1, 0}, 2, 1), new Tensor(new double[]{0, 1}, 2, 1), new Tensor(new double[]{1, 1}, 2, 1),};
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        Arrays.stream(inputs).forEach(input -> {
+            Tensor prediction = this.jNeuralNetwork.processInputs(input);
+            this.jNeuralNetwork.processInputs(input);
+            System.out.println(STR."Input: \{input}");
+            System.out.println(STR."Output: \{prediction.getData()[0]}");
+        });
         try {
-            this.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, 1000);
+            this.jNeuralNetwork.train(this.trainingInputs, this.trainingOutputs, 100);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -68,8 +82,8 @@ public class XORWindowPanel extends JPanel {
         this.cellCount = cellCount;
     }
 
-    public void printAccuracy() {
-        double accuracy = this.jNeuralNetwork.calculateAccuracy(this.trainingInputs, this.trainingOutputs);
-        System.out.println(STR."Accuracy of the network: \{accuracy}");
-    }
+//    public void printAccuracy() {
+//        double accuracy = this.jNeuralNetwork.calculateAccuracy(this.trainingInputs, this.trainingOutputs);
+//        System.out.println(STR."Accuracy of the network: \{accuracy}");
+//    }
 }

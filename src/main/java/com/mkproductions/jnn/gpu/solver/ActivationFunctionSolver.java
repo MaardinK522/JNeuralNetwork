@@ -37,7 +37,6 @@ public class ActivationFunctionSolver {
         }
     }
 
-
     public static void applyActivationFunctionSigmoidDerivative(Matrix2DDouble matrix) {
         for (@Parallel int i = 0; i < matrix.getNumRows(); i++) {
             for (@Parallel int j = 0; j < matrix.getNumColumns(); j++) {
@@ -65,11 +64,10 @@ public class ActivationFunctionSolver {
     public static void applyActivationFunctionLinearDerivative(Matrix2DDouble matrix) {
         for (@Parallel int i = 0; i < matrix.getNumRows(); i++) {
             for (@Parallel int j = 0; j < matrix.getNumColumns(); j++) {
-                matrix.set(i, j, linearDerivative(matrix.get(i, j)));
+                matrix.set(i, j, 1);
             }
         }
     }
-
 
     // Equations of the network's activation functions.
     private static double sigmoid(double x) {
@@ -97,15 +95,7 @@ public class ActivationFunctionSolver {
         return y < 0 ? 0 : 1;
     }
 
-    private static double linearDerivative(double y) {
-        return 1;
-    }
-
     private static double tanhDerivative(double y) {
         return 1 - (y * y);
-    }
-
-    public enum NetworkActivationFunction {
-        SIGMOID, RE_LU, LINEAR, TAN_H
     }
 }

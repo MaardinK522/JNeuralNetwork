@@ -1,5 +1,6 @@
 package com.mkproductions.jnn.gpu;
 
+import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.gpu.solver.LossFunctionSolver;
 import com.mkproductions.jnn.gpu.solver.ActivationFunctionSolver;
@@ -81,7 +82,7 @@ public class TaskGraphMatrixSolver {
         taskGraph.task(taskID, MatrixOperationSolver::transpose, matrix, result);
     }
 
-    public static void applyActivationFunction(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix, ActivationFunctionSolver.NetworkActivationFunction activationFunction) {
+    public static void applyActivationFunction(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix, ActivationFunction activationFunction) {
         switch (activationFunction) {
             case SIGMOID:
                 taskGraph.task(taskID, ActivationFunctionSolver::applyActivationFunctionSigmoid, matrix);
@@ -98,7 +99,7 @@ public class TaskGraphMatrixSolver {
         }
     }
 
-    public static void applyActivationFunctionDerivative(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix, ActivationFunctionSolver.NetworkActivationFunction activationFunction) {
+    public static void applyActivationFunctionDerivative(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix, ActivationFunction activationFunction) {
         switch (activationFunction) {
             case SIGMOID -> taskGraph.task(taskID, ActivationFunctionSolver::applyActivationFunctionSigmoidDerivative, matrix);
             case RE_LU -> taskGraph.task(taskID, ActivationFunctionSolver::applyActivationFunctionReLuDerivative, matrix);

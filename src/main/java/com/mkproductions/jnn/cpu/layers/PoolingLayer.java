@@ -1,6 +1,7 @@
 package com.mkproductions.jnn.cpu.layers;
 
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
+import com.mkproductions.jnn.cpu.entity.Tensor;
 
 public class PoolingLayer extends Layer {
     private final int poolSize;
@@ -30,6 +31,108 @@ public class PoolingLayer extends Layer {
 
     public PoolingLayerType getPoolingLayerType() {
         return poolingLayerType;
+    }
+
+    @Override
+    public Tensor forward(Tensor input) {
+        if (poolingLayerType == PoolingLayer.PoolingLayerType.MAX) {
+            return maxPool(input, poolSize, stride);
+        } else if (poolingLayerType == PoolingLayer.PoolingLayerType.AVG) {
+            return averagePool(input, poolSize, stride);
+        }
+        throw new IllegalStateException("Unknown pooling type.");
+    }
+
+    @Override
+    public Tensor[] backward(Tensor input, Tensor gradients) {
+        return null;
+    }
+
+    private static Tensor maxPool(Tensor input, int poolSize, int stride) {
+        if (input.getRank() != 3) {
+            throw new IllegalArgumentException("Input for pooling must be a Rank-3 Tensor (C, H, W).");
+        }
+
+        int C = input.getShape()[0];
+        int H_in = input.getShape()[1];
+        int W_in = input.getShape()[2];
+
+        int H_out = (H_in - poolSize) / stride + 1;
+        int W_out = (W_in - poolSize) / stride + 1;
+
+        if (H_out <= 0 || W_out <= 0) {
+            throw new IllegalArgumentException("Pooling resulted in zero or negative dimensions.");
+        }
+
+        Tensor output = new Tensor(C, H_out, W_out);
+
+        for (int c = 0; c < C; c++) {
+            for (int h_out = 0; h_out < H_out; h_out++) {
+                for (int w_out = 0; w_out < W_out; w_out++) {
+
+                    double max = Double.NEGATIVE_INFINITY;
+
+                    int h_start = h_out * stride;
+                    int w_start = w_out * stride;
+
+                    for (int p_h = 0; p_h < poolSize; p_h++) {
+                        for (int p_w = 0; p_w < poolSize; p_w++) {
+                            double entry = input.getEntry(c, h_start + p_h, w_start + p_w);
+                            max = Math.max(max, entry);
+                        }
+                    }
+
+                    output.setEntry(max, c, h_out, w_out);
+                }
+            }
+        }
+
+        return output;
+    }
+
+    private static Tensor averagePool(Tensor input, int poolSize, int stride) {
+        if (input.getRank() != 3) {
+            throw new IllegalArgumentException("Input for pooling must be a Rank-3 Tensor (C, H, W).");
+        }
+
+        int C = input.getShape()[0];
+        int H_in = input.getShape()[1];
+        int W_in = input.getShape()[2];
+
+        int H_out = (H_in - poolSize) / stride + 1;
+        int W_out = (W_in - poolSize) / stride + 1;
+
+        if (H_out <= 0 || W_out <= 0) {
+            throw new IllegalArgumentException("Pooling resulted in zero or negative dimensions.");
+        }
+
+        Tensor output = new Tensor(C, H_out, W_out);
+
+        for (int c = 0; c < C; c++) {
+            for (int h_out = 0; h_out < H_out; h_out++) {
+                for (int w_out = 0; w_out < W_out; w_out++) {
+
+                    double sum = 0.0;
+                    int count = 0;
+
+                    int h_start = h_out * stride;
+                    int w_start = w_out * stride;
+
+                    for (int p_h = 0; p_h < poolSize; p_h++) {
+                        for (int p_w = 0; p_w < poolSize; p_w++) {
+                            double entry = input.getEntry(c, h_start + p_h, w_start + p_w);
+                            sum += entry;
+                            count++;
+                        }
+                    }
+
+                    double avg = sum / count;
+                    output.setEntry(avg, c, h_out, w_out);
+                }
+            }
+        }
+
+        return output;
     }
 
     public enum PoolingLayerType {
