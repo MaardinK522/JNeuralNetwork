@@ -2,6 +2,7 @@ package com.mkproductions.jnn.graphics.mnist;
 
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.networks.JNeuralNetwork;
+import com.mkproductions.jnn.networks.JSequential;
 import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 
 import javax.swing.*;
@@ -18,7 +19,7 @@ public class MNISTNetworkSettingsJPanel extends JPanel {
 
     public MNISTNetworkSettingsJPanel(int w, int h, Function<Void, Void> clearGrid, Function<Void, Void> trainNeuralNetwork, Function<Void, Void> resetNeuralNetwork,
             Function<Void, Void> triggerNetworkPrediction, Function<Void, Void> saveNeuralNetwork) {
-        JNeuralNetwork jNeuralNetwork = MNISTFrame.getJNeuralNetwork();
+        JSequential jNeuralNetwork = MNISTFrame.getJNeuralNetwork();
         JButton updateButton = new JButton("Update");
         JButton clearGridButton = new JButton("Clear Grid");
         JButton trainButton = new JButton("Train");
@@ -35,8 +36,8 @@ public class MNISTNetworkSettingsJPanel extends JPanel {
 
         updateButton.addActionListener(_ -> {
             MNISTFrame.getJNeuralNetwork() // Getting network data
-                    .setLossFunctionAble(lossFunctionComboBox.getItemAt(lossFunctionComboBox.getSelectedIndex())) // Loss function
-                    .setJNeuralNetworkOptimizer(optimizerComboBox.getItemAt(optimizerComboBox.getSelectedIndex())) // optimizer
+                    .setLossFunction(lossFunctionComboBox.getItemAt(lossFunctionComboBox.getSelectedIndex())) // Loss function
+                    .setOptimizer(optimizerComboBox.getItemAt(optimizerComboBox.getSelectedIndex())) // optimizer
                     .setDebugMode(debugModeStatus.getItemAt(debugModeStatus.getSelectedIndex())) // debug mode
                     .setLearningRate(Double.parseDouble(learningRateTextField.getText())); // Learning rate
             MNISTFrame.setEpochCount(Integer.parseInt(epochCountTextField.getText()));
@@ -48,8 +49,8 @@ public class MNISTNetworkSettingsJPanel extends JPanel {
         triggerNetworkPredictionButton.addActionListener(_ -> triggerNetworkPrediction.apply(null));
         saveNeuralNetworkButton.addActionListener(_ -> saveNeuralNetwork.apply(null));
 
-        lossFunctionComboBox.setSelectedItem(jNeuralNetwork.getLossFunctionable());
-        optimizerComboBox.setSelectedItem(jNeuralNetwork.getJNeuralNetworkOptimizer());
+        lossFunctionComboBox.setSelectedItem(jNeuralNetwork.getLossFunction());
+        optimizerComboBox.setSelectedItem(jNeuralNetwork.getOptimizer());
         debugModeStatus.setSelectedItem(jNeuralNetwork.isDebugMode());
         autoTrainingModeStatus.setSelectedItem(MNISTFrame.getTrainNetworkStatus());
         learningRateTextField.setText(String.valueOf(jNeuralNetwork.getLearningRate()));

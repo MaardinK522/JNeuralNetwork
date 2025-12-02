@@ -210,12 +210,43 @@ public abstract class Layer {
      */
     public void backPropagationSGDWithMomentum(double learningRate, Tensor deltaWeights, Tensor deltaBiases, double momentum) {
         deltaWeights = Tensor.scalarMultiply(deltaWeights, -learningRate);
-        this.velocityWeightsTensors = Tensor.add(Tensor.scalarMultiply(this.velocityWeightsTensors, momentum), Tensor.scalarMultiply(deltaWeights, 1 - momentum));
-        this.weights.subtract(this.velocityWeightsTensors);
-
         deltaBiases = Tensor.scalarMultiply(deltaBiases, -learningRate);
+
+        this.velocityWeightsTensors = Tensor.add(Tensor.scalarMultiply(this.velocityWeightsTensors, momentum), Tensor.scalarMultiply(deltaWeights, 1 - momentum));
         this.velocityBiasesTensors = Tensor.add(Tensor.scalarMultiply(this.velocityBiasesTensors, momentum), Tensor.scalarMultiply(deltaBiases, 1 - momentum));
+
+        this.weights.subtract(this.velocityWeightsTensors);
         this.bias.subtract(this.velocityBiasesTensors);
+    }
+
+    /**
+     * Performs the backpropagation step for the layer using the Adaptive Gradient (AdaGrad) optimization algorithm.
+     * This method adjusts the weights and biases of the layer by updating parameter velocities and applying AdaGrad updates
+     * with the specified learning rate and epsilon for numerical stability.
+     *
+     * @param learningRate The rate at which the model learns, used to scale the gradient updates.
+     * @param deltaWeights The tensor containing the gradient of the loss with respect to the weights.
+     * @param deltaBiases  The tensor containing the gradient of the loss with respect to the biases.
+     * @param epsilon      A small constant added to the denominator to improve numerical stability and avoid division by zero.
+     */
+    public void backPropagationAdaGrad(double learningRate, Tensor deltaWeights, Tensor deltaBiases, double epsilon) {
+        deltaWeights = Tensor.scalarMultiply(deltaWeights, -learningRate);
+        deltaBiases = Tensor.scalarMultiply(deltaBiases, -learningRate);
+
+        Tensor squaredDeltaWeightsTensor = Tensor.elementWiseMultiplication(deltaWeights, deltaWeights);
+        Tensor squaredDeltaBiasTensor = Tensor.elementWiseMultiplication(deltaBiases, deltaBiases);
+
+        this.velocityWeightsTensors.add(squaredDeltaWeightsTensor);
+        this.velocityBiasesTensors.add(squaredDeltaBiasTensor);
+
+        Tensor currentVelocityWeightsTensor = this.velocityWeightsTensors.copy();
+        Tensor currentVelocityBiasesTensor = this.velocityBiasesTensors.copy();
+
+        Tensor rootWithVelocityWeightsTensor = Tensor.tensorMapping(deltaWeights, (flatIndex, deltaWeight) -> learningRate * deltaWeight / (Math.sqrt(currentVelocityWeightsTensor.getData()[flatIndex]) + epsilon));
+        Tensor rootWithVelocityBiasesTensor = Tensor.tensorMapping(deltaBiases, (flatIndex, deltaBias) -> learningRate * deltaBias / (Math.sqrt(currentVelocityBiasesTensor.getData()[flatIndex]) + epsilon));
+
+        this.weights.subtract(rootWithVelocityWeightsTensor);
+        this.bias.subtract(rootWithVelocityBiasesTensor);
     }
 
     /**
@@ -236,47 +267,17 @@ public abstract class Layer {
         deltaWeights = Tensor.scalarMultiply(deltaWeights, -learningRate);
         deltaBiases = Tensor.scalarMultiply(deltaBiases, -learningRate);
 
-        Tensor squaredDeltaWeightsTensor = Tensor.tensorMapping(deltaWeights, (_, value) -> Math.pow(value, 2));
-        Tensor squaredDeltaBiasesTensor = Tensor.tensorMapping(deltaBiases, ((_, value) -> Math.pow(value, 2)));
+        Tensor squaredDeltaWeightsTensor = Tensor.elementWiseMultiplication(deltaWeights, deltaWeights);
+        Tensor squaredDeltaBiasesTensor = Tensor.elementWiseMultiplication(deltaBiases, deltaBiases);
 
         this.velocityWeightsTensors = Tensor.add(Tensor.scalarMultiply(this.velocityWeightsTensors, momentum), Tensor.scalarMultiply(squaredDeltaWeightsTensor, 1 - momentum));
         this.velocityBiasesTensors = Tensor.add(Tensor.scalarMultiply(this.velocityBiasesTensors, momentum), Tensor.scalarMultiply(squaredDeltaBiasesTensor, 1 - momentum));
 
-
-        Tensor velocityWeightsRootTenor = Tensor.tensorMapping(deltaWeights, (flatIndex, value) -> learningRate * value / Math.sqrt(this.velocityWeightsTensors.getData()[flatIndex] + epsilonRMSProp));
-        Tensor velocityBiasesRootTenor = Tensor.tensorMapping(deltaBiases, (flatIndex, value) -> learningRate * value / Math.sqrt(this.velocityBiasesTensors.getData()[flatIndex] + epsilonRMSProp));
+        Tensor velocityWeightsRootTenor = Tensor.tensorMapping(deltaWeights, (flatIndex, value) -> learningRate * value / (Math.sqrt(this.velocityWeightsTensors.getData()[flatIndex]) + epsilonRMSProp));
+        Tensor velocityBiasesRootTenor = Tensor.tensorMapping(deltaBiases, (flatIndex, value) -> learningRate * value / (Math.sqrt(this.velocityBiasesTensors.getData()[flatIndex]) + epsilonRMSProp));
 
         this.weights.subtract(velocityWeightsRootTenor);
         this.bias.subtract(velocityBiasesRootTenor);
-    }
-
-    /**
-     * Performs the backpropagation step for the layer using the Adaptive Gradient (AdaGrad) optimization algorithm.
-     * This method adjusts the weights and biases of the layer by updating parameter velocities and applying AdaGrad updates
-     * with the specified learning rate and epsilon for numerical stability.
-     *
-     * @param learningRate The rate at which the model learns, used to scale the gradient updates.
-     * @param deltaWeights The tensor containing the gradient of the loss with respect to the weights.
-     * @param deltaBiases  The tensor containing the gradient of the loss with respect to the biases.
-     * @param epsilon      A small constant added to the denominator to improve numerical stability and avoid division by zero.
-     */
-    public void backPropagationAdaGrad(double learningRate, Tensor deltaWeights, Tensor deltaBiases, double epsilon) {
-        deltaWeights = Tensor.scalarMultiply(deltaWeights, -learningRate);
-        deltaBiases = Tensor.scalarMultiply(deltaBiases, -learningRate);
-
-        Tensor squaredDeltaWeightsTensor = Tensor.elementWiseMultiplication(deltaWeights, deltaWeights);
-        Tensor squaredDeltaBiasTensor = Tensor.elementWiseMultiplication(deltaBiases, deltaBiases);
-        this.velocityWeightsTensors.add(squaredDeltaWeightsTensor);
-        this.velocityBiasesTensors.add(squaredDeltaBiasTensor);
-
-        Tensor currentVelocityWeightsTensor = this.velocityWeightsTensors.copy();
-        Tensor currentVelocityBiasesTensor = this.velocityBiasesTensors.copy();
-
-        Tensor rootWithVelocityWeightsTensor = Tensor.tensorMapping(deltaWeights, (flatIndex, deltaWeight) -> learningRate * deltaWeight / (Math.sqrt(currentVelocityWeightsTensor.getData()[flatIndex] + epsilon)));
-        Tensor rootWithVelocityBiasesTensor = Tensor.tensorMapping(deltaBiases, (flatIndex, deltaBias) -> learningRate * deltaBias / (Math.sqrt(currentVelocityBiasesTensor.getData()[flatIndex] + epsilon)));
-
-        this.weights.subtract(rootWithVelocityWeightsTensor);
-        this.bias.subtract(rootWithVelocityBiasesTensor);
     }
 
     /**
@@ -312,14 +313,14 @@ public abstract class Layer {
         this.velocityBiasesTensors = Tensor.add(Tensor.scalarMultiply(this.velocityBiasesTensors, beta2), Tensor.scalarMultiply(squaredBiasesGradients, 1 - beta2));
         this.velocityWeightsTensors = Tensor.add(Tensor.scalarMultiply(this.velocityWeightsTensors, beta2), Tensor.scalarMultiply(squaredWeightsGradients, 1 - beta2));
 
-        Tensor momentumWeightsHat = Tensor.tensorMapping(this.momentumWeightsTensors, (_, m) -> m / (1 - beta_1_t));
-        Tensor momentumBiasesHat = Tensor.tensorMapping(this.momentumBiasesTensors, (_, m) -> m / (1 - beta_1_t));
+        Tensor momentumWeightsHat = Tensor.tensorMapping(this.momentumWeightsTensors, (_, mW) -> mW / (1 - beta_1_t));
+        Tensor momentumBiasesHat = Tensor.tensorMapping(this.momentumBiasesTensors, (_, mB) -> mB / (1 - beta_1_t));
 
-        Tensor velocityWeightsHat = Tensor.tensorMapping(this.velocityWeightsTensors, (_, v) -> v / (1 - beta_2_t));
-        Tensor velocityBiasesHat = Tensor.tensorMapping(this.velocityBiasesTensors, (_, v) -> v / (1 - beta_2_t));
+        Tensor velocityWeightsHat = Tensor.tensorMapping(this.velocityWeightsTensors, (_, vW) -> vW / (1 - beta_2_t));
+        Tensor velocityBiasesHat = Tensor.tensorMapping(this.velocityBiasesTensors, (_, vB) -> vB / (1 - beta_2_t));
 
-        Tensor rootWithVelocityWeightsTensor = Tensor.tensorMapping(momentumWeightsHat, (flatIndex, m) -> learningRate * m / (Math.sqrt(velocityWeightsHat.getData()[flatIndex] + epsilon)));
-        Tensor rootWithVelocityBiasesTensor = Tensor.tensorMapping(momentumBiasesHat, (flatIndex, m) -> learningRate * m / (Math.sqrt(velocityBiasesHat.getData()[flatIndex] + epsilon)));
+        Tensor rootWithVelocityWeightsTensor = Tensor.tensorMapping(momentumWeightsHat, (flatIndex, mW_Hat) -> learningRate * mW_Hat / (Math.sqrt(velocityWeightsHat.getData()[flatIndex]) + epsilon));
+        Tensor rootWithVelocityBiasesTensor = Tensor.tensorMapping(momentumBiasesHat, (flatIndex, mN_hat) -> learningRate * mN_hat / (Math.sqrt(velocityBiasesHat.getData()[flatIndex]) + epsilon));
 
         this.weights.subtract(rootWithVelocityWeightsTensor);
         this.bias.subtract(rootWithVelocityBiasesTensor);
@@ -339,14 +340,12 @@ public abstract class Layer {
     }
 
     private void randomize(@NotNull Tensor tensor) {
-        double stdDev = Math.sqrt(2.0 / tensor.getShape()[1]);
-        for (int a = 0; a < tensor.getShape()[0]; a++) {
-            for (int b = 0; b < tensor.getShape()[1]; b++) {
-                double u1 = random.nextDouble();
-                double u2 = random.nextDouble();
-                double gaussian = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-                tensor.setEntry(gaussian * stdDev, a, b);
-            }
+        double stdDev = Math.sqrt(2.0 / tensor.getData().length);
+        for (int a = 0; a < tensor.getData().length; a++) {
+            double u1 = random.nextDouble();
+            double u2 = random.nextDouble();
+            double gaussian = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+            tensor.getData()[a] = gaussian * stdDev;
         }
     }
 }

@@ -45,7 +45,7 @@ public class JGPUNeuralNetwork {
         this.biasesGradientsMatrices = new Matrix2DDouble[this.networkLayers.length];
         this.weightGradientsMatrices = new Matrix2DDouble[this.networkLayers.length];
         this.weightsTransposeMatrices = new Matrix2DDouble[this.networkLayers.length];
-        this.inputs = new double[][] { new double[this.numberOfInputsNode] };
+        this.inputs = new double[][]{new double[this.numberOfInputsNode]};
         this.learningRate = 0.01;
         for (int layerIndex = 0; layerIndex < this.networkLayers.length; layerIndex++) {
             if (layerIndex == 0) {
@@ -66,7 +66,7 @@ public class JGPUNeuralNetwork {
             }
         }
         this.initializeRandomNetwork();
-        this.targets = new double[][] { new double[this.networkLayers[this.networkLayers.length - 1].getNumberOfNodes()] };
+        this.targets = new double[][]{new double[this.networkLayers[this.networkLayers.length - 1].getNumberOfNodes()]};
     }
 
     private void initializeRandomNetwork() {
@@ -168,7 +168,7 @@ public class JGPUNeuralNetwork {
         TaskGraphMatrixSolver.
 
                 calculateLossDerivative(backPropagationTaskGraph, "calculatingError:", this.outputMatrices[this.outputMatrices.length - 1], targetMatrix,
-                this.errorMatrices[this.outputMatrices.length - 1], this.lossFunction);
+                        this.errorMatrices[this.outputMatrices.length - 1], this.lossFunction);
         for (int layerIndex = this.networkLayers.length - 1; layerIndex >= 0; layerIndex--) {
             backPropagationTaskGraph.
 
@@ -219,7 +219,7 @@ public class JGPUNeuralNetwork {
     }
 
     public double[] predict(double[] inputs) {
-        this.inputs = new double[][] { inputs };
+        this.inputs = new double[][]{inputs};
         this.prepareFeedForwardTaskGraph();
         this.networkFeedForwardTornadoExecutionPlan.execute();
         Matrix2DDouble output = this.outputMatrices[this.outputMatrices.length - 1];

@@ -10,11 +10,17 @@ public class FlattenLayer extends Layer {
 
     @Override
     public Tensor forward(Tensor input) {
-        return input.reshape(input.getData().length);
+        return input.reshape(input.getData().length, 1);
     }
 
     @Override
     public Tensor[] backward(Tensor input, Tensor gradients) {
-        return null;
+        Tensor propagatedError = gradients.reshape(input.getShape());
+        return new Tensor[]{null, null, propagatedError};
+    }
+
+    @Override
+    public String toString() {
+        return "FlattenLayer{}";
     }
 }

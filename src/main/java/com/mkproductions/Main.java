@@ -11,16 +11,18 @@ import com.mkproductions.jnn.graphics.xor.XORFrame;
 import com.mkproductions.jnn.networks.JNeuralNetwork;
 import org.jetbrains.annotations.NotNull;
 import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
+import uk.ac.manchester.tornado.api.common.TornadoDevice;
 
 public class Main {
     private static final double[][] trainingInputs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
     private static final double[][] trainingOutputs = {{0}, {1}, {1}, {0}};
 
     static void main() {
-        testingXORProblem();
-//        testingMNISTCSVTrainingTesting();
+        //        testingXORProblem();
+        //        testingMNISTCSVTrainingTesting();
         //        renderNetwork();
         //        testingOnGPU();
+
     }
 
     private static void testingMNISTCSVTrainingTesting() {
@@ -32,18 +34,18 @@ public class Main {
         }
     }
 
+    private static void renderNetwork() {
+        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.MEAN_SQUARED_ERROR, JNetworkOptimizer.SGD, 2, new DenseLayer(4, ActivationFunction.SIGMOID), new DenseLayer(4, ActivationFunction.SIGMOID), new DenseLayer(1, ActivationFunction.SIGMOID));
+        new NeuralNetworkTrainingViewerJFrame(jNeuralNetwork, trainingInputs, trainingOutputs).startRendering();
+    }
+
     public static void testingXORProblem() {
         XORFrame graphicsFrame = new XORFrame("Main Graphics");
         graphicsFrame.startRendering();
     }
 
-    private static void renderNetwork() {
-        JNeuralNetwork jNeuralNetwork = new JNeuralNetwork(LossFunction.MEAN_SQUARED_ERROR, JNetworkOptimizer.SGD_MOMENTUM, 2, new DenseLayer(4, ActivationFunction.SIGMOID), new DenseLayer(4, ActivationFunction.SIGMOID), new DenseLayer(1, ActivationFunction.SIGMOID));
-        new NeuralNetworkTrainingViewerJFrame(jNeuralNetwork, trainingInputs, trainingOutputs).startRendering();
-    }
-
     private static void testingOnGPU() {
-        var device = TornadoExecutionPlan.getDevice(0, 0);
+        TornadoDevice device = TornadoExecutionPlan.getDevice(0, 0);
         System.out.println(STR."Device: \{device}");
         JGPUNeuralNetwork jgpuNeuralNetwork = new JGPUNeuralNetwork(LossFunction.MEAN_SQUARED_ERROR, 2, new DenseLayer(4, ActivationFunction.SIGMOID), new DenseLayer(4, ActivationFunction.SIGMOID), new DenseLayer(1, ActivationFunction.SIGMOID));
     }

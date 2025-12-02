@@ -4,23 +4,6 @@ import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
 import com.mkproductions.jnn.cpu.entity.Tensor;
 
 public enum LossFunction implements LossFunctionAble {
-    //    ABSOLUTE_ERROR {
-//        @Override
-//        public Tensor getLossFunctionTensor(Tensor predictionTensor, Tensor targetMatrix) {
-//            Tensor.validateTensors(predictionTensor, targetMatrix);
-//            // Calculate the squared error for each element in the matrix.
-//            return Tensor.tensorMapping(predictionTensor, (flatIndex, prediction) -> (targetMatrix.getData()[flatIndex] - prediction));
-//        }
-//
-//        @Override
-//        public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
-//            Tensor.validateTensors(prediction, target);
-//            return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
-//                double error = target.getData()[flatIndex] - prediction.getData()[flatIndex];
-//                return error >= 0 ? 1 : -1;
-//            });
-//        }
-//    }, // Absolute Error
     MEAN_SQUARED_ERROR {
         @Override
         public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
@@ -39,9 +22,7 @@ public enum LossFunction implements LossFunctionAble {
     MEAN_ABSOLUTE_ERROR {
         @Override
         public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
-            // Ensure input matrices have the same dimensions
             Tensor.validateTensors(prediction, target);
-            // Calculate the absolute error for each element in the matrix
             return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
                 var error = prediction.getData()[flatIndex] - target.getData()[flatIndex];
                 return Math.abs(error);
@@ -56,8 +37,8 @@ public enum LossFunction implements LossFunctionAble {
                 return error >= 0 ? 1 : -1;
             });
         }
-    }, // Smooth mean absolute error loss function.
-    // TODO: Implement this loss function with the proper derivative.
+    }, // Mean Absolute error.
+    // // TODO: Implement this loss function with the proper derivative.
     //    SMOOTH_MEAN_ABSOLUTE_ERROR {
     //        @Override
     //        public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
@@ -165,36 +146,39 @@ public enum LossFunction implements LossFunctionAble {
             });
         }
     }, // Categorical Cross Entropy
-    // TODO: Yet to implement the sparse categorical cross entropy.
-    //    SPARSE_CATEGORICAL_CROSS_ENTROPY {
-    //        @Override
-    //        public Tensor getLossFunctionTensor(Tensor predictions, Tensor trueLabels) {
-    //            // Check for dimension compatibility
-    //            if (predictions.getRowCount() != trueLabels.getRowCount() || predictions.getColumnCount() != trueLabels.getColumnCount()) {
-    //                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-    //            }
-    //
-    //            // Calculate sparse categorical cross-entropy loss for each element
-    //            return Tensor.matrixMapping(new Tensor(predictions.getRowCount(), predictions.getColumnCount()), (FlatIndex, column, value) -> {
-    //                int trueClass = (int) trueLabels.getEntry(FlatIndex, 0); // Assuming target is a single column matrix with class indices
-    //                double predictedProb = predictions.getEntry(FlatIndex, trueClass);
-    //                predictedProb = Math.max(predictedProb, 1e-15); // Clip to prevent log(0)
-    //                return -Math.log(predictedProb);
-    //            });
-    //        }
-    //
-    //        @Override
-    //        public Tensor getDerivativeTensor(Tensor predictions, Tensor trueLabels) {
-    //            // Check for dimension compatibility
-    //            if (predictions.getRowCount() != trueLabels.getRowCount() || predictions.getColumnCount() != trueLabels.getColumnCount()) {
-    //                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
-    //            }
-    //
-    //            // Calculate the derivative for each element
-    //            return Tensor.matrixMapping(new Tensor(predictions.getRowCount(), predictions.getColumnCount()), (FlatIndex, column, value) -> {
-    //                int trueClass = (int) trueLabels.getEntry(FlatIndex, 0);
-    //                return column == trueClass ? value - 1 : value;
-    //            });
-    //        }
-    //    },
+    SPARSE_CATEGORICAL_CROSS_ENTROPY {
+        @Override
+        public Tensor getLossFunctionTensor(Tensor predictions, Tensor trueLabels) {
+            // Check for dimension compatibility
+            if (Tensor.hasSameShape(predictions, trueLabels)) {
+                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
+            }
+            // Calculate sparse categorical cross-entropy loss for each element
+            return Tensor.tensorMapping(new Tensor(predictions.getShape()), (flatIndex, _) -> {
+                double predictedProb = predictions.getEntry(flatIndex);
+                predictedProb = Math.max(predictedProb, 1e-15); // Clip to prevent log(0)
+                return -Math.log(predictedProb);
+            });
+        }
+
+        @Override
+        public Tensor getDerivativeTensor(Tensor predictions, Tensor trueLabels) {
+            // Check for dimension compatibility
+            for (int shapeIndex = 0; shapeIndex < predictions.getShape().length; shapeIndex++) {
+                if (predictions.getShape()[shapeIndex] != trueLabels.getShape()[shapeIndex]) {
+                    throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
+                }
+            }
+            // Calculate the derivative for each element
+            if (Tensor.hasSameShape(predictions, trueLabels)) {
+                throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
+            }
+            // Calculate sparse categorical cross-entropy loss for each element
+            return Tensor.tensorMapping(new Tensor(predictions.getShape()), (flatIndex, _) -> {
+                double predictedProb = predictions.getEntry(flatIndex);
+                predictedProb = Math.max(predictedProb, 1e-15); // Clip to prevent log(0)
+                return -Math.log(predictedProb);
+            });
+        }
+    },
 }

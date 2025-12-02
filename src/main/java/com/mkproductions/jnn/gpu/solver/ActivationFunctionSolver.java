@@ -4,7 +4,6 @@ import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.types.matrix.Matrix2DDouble;
 
 public class ActivationFunctionSolver {
-    // Activation function operations.
     public static void applyActivationFunctionSigmoid(Matrix2DDouble matrix) {
         for (@Parallel int i = 0; i < matrix.getNumRows(); i++) {
             for (@Parallel int j = 0; j < matrix.getNumColumns(); j++) {
@@ -69,7 +68,6 @@ public class ActivationFunctionSolver {
         }
     }
 
-    // Equations of the network's activation functions.
     private static double sigmoid(double x) {
         return 1.0 / (1 + Math.exp(-x));
     }

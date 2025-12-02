@@ -63,7 +63,7 @@ public class Demo {
 
         Tensor kernel = new Tensor(new double[] { 1, 0, 0, -1 }, 2, 2);
 
-        Tensor result = Tensor.convolve2D(input, kernel, 1, 0, new Tensor());
+        Tensor result = Tensor.convolve2D(input, kernel, 1, 0);
         System.out.println(result);
     }
 

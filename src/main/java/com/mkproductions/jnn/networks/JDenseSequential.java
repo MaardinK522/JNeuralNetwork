@@ -21,7 +21,7 @@ public class JDenseSequential {
     private double learningRate;
     private final double momentumFactorBeta1;
     private final double momentumFactorBeta2;
-    private final double epsilon = Math.pow(10, -8);
+    private final double epsilon = 1e-8;
     private int epochCount = 0;
     private int adamSteps = 0;
     private final Random random = new SecureRandom();
@@ -70,7 +70,7 @@ public class JDenseSequential {
                     currentGradient = Tensor.subtract(finalOutputTensor, targetTensor);
                 } else {
                     Tensor outputLoss = this.lossFunctionable.getDerivativeTensor(finalOutputTensor, targetTensor);
-                    Tensor outputdDerivativeTensor = getDeactivatedActivationFunctionTensor(outputTensors[layerIndex], layer.getActivationFunction());
+                    Tensor outputdDerivativeTensor = JSequential.getDeactivatedTensor(outputTensors[layerIndex], layer.getActivationFunction());
                     currentGradient = Tensor.elementWiseMultiplication(outputLoss, outputdDerivativeTensor);
                 }
             }
@@ -114,36 +114,6 @@ public class JDenseSequential {
         }
     }
 
-    public static Tensor getAppliedActivationFunctionTensor(Tensor tensor, @NotNull ActivationFunction activationFunction) {
-        if (activationFunction.name().equals(ActivationFunction.SOFTMAX.name())) {
-            if (tensor.getShape()[1] != 1) {
-                throw new IllegalArgumentException("Unable to apply softmax due to more column existing in the given Tensor.");
-            }
-            Tensor eRasiedTensor = Tensor.tensorMapping(tensor, (_, value) -> Math.exp(value));
-            double sum = IntStream.range(0, eRasiedTensor.getShape()[0]).mapToDouble(a -> eRasiedTensor.getEntry(a, 0)).sum();
-            return Tensor.tensorMapping(eRasiedTensor, ((flatIndex, value) -> value / sum));
-        }
-        return Tensor.tensorMapping(tensor, activationFunction.getEquation());
-    }
-
-
-    public static Tensor getDeactivatedActivationFunctionTensor(Tensor activatedTensor, @NotNull ActivationFunction activationFunction) {
-        if (activationFunction.name().equals(ActivationFunction.SOFTMAX.name())) {
-            if (activatedTensor.getShape()[1] != 1) {
-                throw new IllegalArgumentException("Softmax derivative expects a single vector output.");
-            }
-            int n = Math.max(activatedTensor.getShape()[0], activatedTensor.getShape()[1]);
-            Tensor result = new Tensor(n, n);
-            for (int a = 0; a < n; a++) {
-                for (int b = 0; b < n; b++) {
-                    double entry = a == b ? (activatedTensor.getEntry(a, b) * (1 - activatedTensor.getEntry(a, b))) : -activatedTensor.getEntry(a, b) * activatedTensor.getEntry(b, a);
-                    result.setEntry(entry, a, b);
-                }
-            }
-            return result;
-        }
-        return Tensor.tensorMapping(activatedTensor, activationFunction.getDerivative());
-    }
 
     public Tensor processInputs(Tensor tensor) {
         return forwardPropagation(tensor)[this.netWorkDenseLayers.length - 1];

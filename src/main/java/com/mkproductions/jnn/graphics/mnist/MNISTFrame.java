@@ -6,9 +6,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.cpu.CSVBufferedReader;
-import com.mkproductions.jnn.cpu.layers.DenseLayer;
+import com.mkproductions.jnn.cpu.entity.Tensor;
+import com.mkproductions.jnn.cpu.layers.*;
 import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
+import com.mkproductions.jnn.networks.JSequential;
 import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 import com.mkproductions.jnn.networks.JNeuralNetwork;
 
@@ -29,21 +31,21 @@ public class MNISTFrame extends JFrame {
     private final MNISTDrawningJPanel mnistDrawningJPanel;
     private final MNISTNetworkOutputJPanel mnistNetworkOutputJPanel;
     private boolean running;
-    private final double[][] trainingInputs;
-    private final double[][] trainingOutputs;
-    private final double[][] testingInputs;
-    private final double[][] testingOutputs;
+    private final Tensor[] trainingInputs;
+    private final Tensor[] trainingOutputs;
+    private final Tensor[] testingInputs;
+    private final Tensor[] testingOutputs;
     private static final int[][] dataGrid = new int[28][28];
-    private static JNeuralNetwork jNeuralNetwork;
+    private static JSequential jNeuralNetwork;
     private final SaveNeuralNetworkDialog saveNeuralNetworkDialog;
     public static boolean autoTrainNetwork = false;
     public static double networkAccuracy = 0.0;
-    public static DenseLayer[] networkDenseLayers;
+    public static Layer[] networkDenseLayers;
 
     public MNISTFrame(String frameName) {
         this.running = false;
         // Declaring the size of the inputs and outputs.
-        double[][][] trainingTestingData = this.prepareTrainingTestingDataSet();
+        Tensor[][] trainingTestingData = this.prepareTrainingTestingDataSet();
         this.trainingInputs = trainingTestingData[0];
         this.trainingOutputs = trainingTestingData[1];
         this.testingInputs = trainingTestingData[2];
@@ -74,48 +76,49 @@ public class MNISTFrame extends JFrame {
         leftPanel.add(mnistNetworkSettingsJPanel);
         add(leftPanel);
         add(this.mnistDrawningJPanel);
-        //        addKeyListener(new KeyAdapter() {
-        //            @Override
-        //            public void keyPressed(KeyEvent e) {
-        //                super.keyPressed(e);
-        //                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-        //                    running = false;
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_T) {
-        //                    triggerNetworkTraining();
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_C) {
-        //                    clearGridData();
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_R) {
-        //                    restartNetwork();
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_UP) {
-        //                    jNeuralNetwork.setEpochCount(jNeuralNetwork.getEpochCount() + 1);
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_M) {
-        //                    printSingleTrainingEntry();
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_DOWN && jNeuralNetwork.getEpochCount() > 1) {
-        //                    jNeuralNetwork.setEpochCount(jNeuralNetwork.getEpochCount() - 1);
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_LEFT && jNeuralNetwork.getLearningRate() > 0.0) {
-        //                    jNeuralNetwork.setLearningRate(jNeuralNetwork.getLearningRate() - 0.0001);
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_RIGHT && jNeuralNetwork.getLearningRate() < 1.0) {
-        //                    jNeuralNetwork.setLearningRate(jNeuralNetwork.getLearningRate() + 0.0001);
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-        //                    trainNetwork = !trainNetwork;
-        //                }
-        //                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-        //                    mnistNetworkOutputJPanel.triggerNetworkPrediction();
-        //                }
-        //                if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_S) {
-        //                    saveNeuralNetworkDialog.setVisible(true);
-        //                }
-        //            }
-        //        });
+        /**        addKeyListener(new KeyAdapter() {
+         //            @Override
+         //            public void keyPressed(KeyEvent e) {
+         //                super.keyPressed(e);
+         //                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+         //                    running = false;
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_T) {
+         //                    triggerNetworkTraining();
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_C) {
+         //                    clearGridData();
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_R) {
+         //                    restartNetwork();
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_UP) {
+         //                    jNeuralNetwork.setEpochCount(jNeuralNetwork.getEpochCount() + 1);
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_M) {
+         //                    printSingleTrainingEntry();
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_DOWN && jNeuralNetwork.getEpochCount() > 1) {
+         //                    jNeuralNetwork.setEpochCount(jNeuralNetwork.getEpochCount() - 1);
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_LEFT && jNeuralNetwork.getLearningRate() > 0.0) {
+         //                    jNeuralNetwork.setLearningRate(jNeuralNetwork.getLearningRate() - 0.0001);
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_RIGHT && jNeuralNetwork.getLearningRate() < 1.0) {
+         //                    jNeuralNetwork.setLearningRate(jNeuralNetwork.getLearningRate() + 0.0001);
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+         //                    trainNetwork = !trainNetwork;
+         //                }
+         //                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+         //                    mnistNetworkOutputJPanel.triggerNetworkPrediction();
+         //                }
+         //                if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_S) {
+         //                    saveNeuralNetworkDialog.setVisible(true);
+         //                }
+         //            }
+         //        });
+         */
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e) {
@@ -137,7 +140,29 @@ public class MNISTFrame extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
 
-    public static double[] processNetworkInputs(double[] inputs) {
+    private void restartNetwork() {
+        System.out.println("A new network for training MNISt haas been pre-paired.");
+        networkDenseLayers = new Layer[]{ // Layer arrays.
+                //                new Layer(256, ActivationFunction.RE_LU), // ReLu layer
+                new ConvolutionLayer(3, 16, 1, 1, ActivationFunction.RE_LU), // CNN Relu
+                new PoolingLayer(2, 2, PoolingLayer.PoolingLayerType.MAX), // Pool
+                new ConvolutionLayer(3, 32, 1, 1, ActivationFunction.RE_LU), // CNN Relu
+                new PoolingLayer(2, 2, PoolingLayer.PoolingLayerType.MAX), // Pool
+                new FlattenLayer(),
+                new DenseLayer(10, ActivationFunction.SOFTMAX), // Sigmoid layer
+        };
+        jNeuralNetwork = new JSequential( // Neural Network.
+                new int[]{1, 28, 28}, // Input shape
+                LossFunction.SPARSE_CATEGORICAL_CROSS_ENTROPY, //Loss Function
+                JNetworkOptimizer.ADAM, // Optimizer
+                networkDenseLayers // Network Layers.
+        );
+        jNeuralNetwork.setLearningRate(0.001);
+        jNeuralNetwork.setMomentumFactorBeta1(0.99);
+        jNeuralNetwork.setDebugMode(true);
+    }
+
+    public static Tensor processNetworkInputs(Tensor inputs) {
         return jNeuralNetwork.processInputs(inputs);
     }
 
@@ -145,7 +170,7 @@ public class MNISTFrame extends JFrame {
         return dataGrid;
     }
 
-    public static JNeuralNetwork getJNeuralNetwork() {
+    public static JSequential getJNeuralNetwork() {
         return jNeuralNetwork;
     }
 
@@ -154,7 +179,7 @@ public class MNISTFrame extends JFrame {
     }
 
     public static LossFunctionAble getNetworkLoss() {
-        return jNeuralNetwork.getLossFunctionable();
+        return jNeuralNetwork.getLossFunction();
     }
 
     public static void setEpochCount(int epochCount) {
@@ -170,7 +195,7 @@ public class MNISTFrame extends JFrame {
     }
 
     public static JNetworkOptimizer getJNeuralNetworkOptimizer() {
-        return jNeuralNetwork.getJNeuralNetworkOptimizer();
+        return jNeuralNetwork.getOptimizer();
     }
 
     public static Boolean getTrainNetworkStatus() {
@@ -179,26 +204,6 @@ public class MNISTFrame extends JFrame {
 
     public static void setAutoTrainingMode(Boolean autoTrainNetwork) {
         MNISTFrame.autoTrainNetwork = autoTrainNetwork;
-    }
-
-    private void restartNetwork() {
-        System.out.println("A new network for training MNISt haas been pre-paired.");
-        networkDenseLayers = new DenseLayer[] { // Layer arrays.
-                //                new Layer(256, ActivationFunction.RE_LU), // ReLu layer
-                new DenseLayer(128, ActivationFunction.RE_LU), // ReLu layer
-                new DenseLayer(128, ActivationFunction.RE_LU), // ReLu layer
-                new DenseLayer(128, ActivationFunction.RE_LU), // ReLu layer
-                new DenseLayer(10, ActivationFunction.SIGMOID), // Sigmoid layer
-        };
-        jNeuralNetwork = new JNeuralNetwork( // Neural Network.
-                LossFunction.LOG_COSH,//Loss Function
-                JNetworkOptimizer.ADAM, // Optimizer
-                28 * 28, // Input nodes
-                networkDenseLayers // Network Layers.
-        );
-        jNeuralNetwork.setLearningRate(0.001);
-        jNeuralNetwork.setMomentumFactorBeta1(0.99);
-        jNeuralNetwork.setDebugMode(true);
     }
 
     private SaveStatus saveJNeuralNetwork(String fileName) {
@@ -251,54 +256,125 @@ public class MNISTFrame extends JFrame {
         System.exit(-200);
     }
 
-    private double[][][] prepareTrainingTestingDataSet() {
+    private Tensor[][] prepareTrainingTestingDataSet() {
         System.out.println("Please! Wait for preparing training data...");
-        String dataPath = STR."\{System.getProperty("user.dir")}//src//main//resources//com//mkproductions//";
 
-        String trainingDataPath = STR."\{dataPath}training_data//mnist_train.csv";
-        String testingDataPath = STR."\{dataPath}testing_data//mnist_test.csv";
+        // --- FIX: Using File.separator for cross-platform compatibility ---
+        String userDir = System.getProperty("user.dir");
+        String sep = File.separator;
+
+        // Construct base data path using system separator
+        String dataPath = STR."\{userDir}\{sep}src\{sep}main\{sep}resources\{sep}com\{sep}mkproductions\{sep}";
+
+        String trainingDataPath = STR."\{dataPath}training_data\{sep}mnist_train.csv";
+        String testingDataPath = STR."\{dataPath}testing_data\{sep}mnist_test.csv";
+        // --- END FIX ---
 
         CSVBufferedReader csvTrainingDataBufferedReader = new CSVBufferedReader(trainingDataPath);
         CSVBufferedReader csvTestingDataBufferedReader = new CSVBufferedReader(testingDataPath);
+        System.out.println("Data has been loaded successfully.");
 
+        System.out.println("Wait for data to tensor conversion...");
         List<List<Double>> csvTrainingDataTable = csvTrainingDataBufferedReader.getTable();
         var csvTrainingOutputColumn = csvTrainingDataBufferedReader.getColumn("label");
         List<List<Double>> csvTestingDataTable = csvTestingDataBufferedReader.getTable();
         var csvTestingOutputColumn = csvTestingDataBufferedReader.getColumn("label");
 
-        double[][] trainingInputs = new double[csvTrainingDataTable.size()][csvTrainingDataTable.getFirst().size()];
-        double[][] trainingOutputs = new double[csvTrainingOutputColumn.size()][10];
-        double[][] testingInputs = new double[csvTestingDataTable.size()][csvTestingDataTable.getFirst().size()];
-        double[][] testingOutputs = new double[csvTestingOutputColumn.size()][10];
+        Tensor[] trainingInputs = new Tensor[csvTrainingDataTable.size()];
+        Tensor[] trainingOutputs = new Tensor[csvTrainingOutputColumn.size()];
+        Tensor[] testingInputs = new Tensor[csvTestingDataTable.size()];
+        Tensor[] testingOutputs = new Tensor[csvTestingOutputColumn.size()];
 
-        // For filtering training data.
-        for (int a = 0; a < trainingInputs.length; a++) {
-            for (int b = 0; b < trainingInputs[0].length; b++) {
+        final int barLength = 50;
+        int totalTrainingSamples = csvTrainingDataTable.size();
+        int totalTestingSamples = csvTestingDataTable.size();
+
+        // ----------------------------------------------------
+        // 1. Converting Training Inputs (Pixel Data)
+        // ----------------------------------------------------
+        System.out.println("\nConverting Training Inputs (Images)...");
+        int lastProgress = -1;
+        for (int a = 0; a < totalTrainingSamples; a++) {
+
+            trainingInputs[a] = new Tensor(1, 28, 28);
+            // Assuming the first column is the label and is skipped, and image data follows.
+            // If the label column is included in the List<List<Double>>, adjust 'b' starting index.
+            for (int b = 0; b < csvTrainingDataTable.getFirst().size(); b++) {
                 double value = csvTrainingDataTable.get(a).get(b);
-                trainingInputs[a][b] = value / 255;//Mapper.mapRangeToRange(value, 0, 255, 0, 1);
+                // Assume the CSV data order matches the flattened tensor data order
+                trainingInputs[a].getData()[b] = value / 255.0; // Normalize pixel data
+            }
+
+            // --- Progress Tracking Logic ---
+            int progress = (int) ((double) (a + 1) * 100 / totalTrainingSamples);
+            if (progress != lastProgress) {
+                lastProgress = progress;
+
+                int filled = progress * barLength / 100;
+                String filledBar = "#".repeat(filled);
+                String emptyBar = " ".repeat(barLength - filled);
+
+                System.out.printf("\rProgress: %d/%d (%.2f%%) [%s%s]", a + 1, totalTrainingSamples, (double) progress, filledBar, emptyBar);
             }
         }
-        //        for (double[] rows : trainingInputs) {
-        //            System.out.println(STR."Row: \{Arrays.toString(rows)}");
-        //        }
-        // Converting training outputs into raw arrays.
-        for (int a = 0; a < trainingOutputs.length; a++) {
-            trainingOutputs[a][csvTrainingOutputColumn.get(a)] = 1.0;
-            //            System.out.println(STR."Index: \{csvTrainingOutputColumn.get(a)}");
-        }
-        // For filtering testing data.
-        for (int a = 0; a < testingInputs.length; a++) {
-            for (int b = 0; b < testingInputs[0].length; b++) {
-                double value = csvTestingDataTable.get(a).get(b); //Mapper.mapRangeToRange(csvTestingDataTable.get(a).get(b), 0, 255, 0, 1);
-                testingInputs[a][b] = value / 255;
+        System.out.println("\nTraining Input Conversion Complete.");
+
+        // ----------------------------------------------------
+        // 2. Converting Training Outputs (Labels to One-Hot)
+        // ----------------------------------------------------
+        System.out.println("Converting Training Outputs (Labels)...");
+        // This is fast and usually doesn't need a bar, but we iterate for completeness.
+        for (int a = 0; a < csvTrainingOutputColumn.size(); a++) {
+            trainingOutputs[a] = new Tensor(10, 1);
+            int label = csvTrainingOutputColumn.get(a);
+            if (label >= 0 && label < 10) {
+                trainingOutputs[a].getData()[label] = 1.0;
+            } else {
+                // Handle invalid label if necessary
+                throw new RuntimeException(STR."Invalid label: \{label}");
             }
         }
-        // Converting testing outputs into raw outputs.
-        for (int a = 0; a < testingOutputs.length; a++) {
-            testingOutputs[a][csvTestingOutputColumn.get(a)] = 1.0;
+
+        // ----------------------------------------------------
+        // 3. Converting Testing Inputs (Pixel Data)
+        // ----------------------------------------------------
+        System.out.println("Converting Testing Inputs (Images)...");
+        lastProgress = -1;
+        for (int a = 0; a < totalTestingSamples; a++) {
+            testingInputs[a] = new Tensor(1, 28, 28);
+            for (int b = 0; b < csvTestingDataTable.getFirst().size(); b++) {
+                double value = csvTestingDataTable.get(a).get(b);
+                testingInputs[a].getData()[b] = value / 255.0; // Normalize pixel data
+            }
+
+            // --- Progress Tracking Logic ---
+            int progress = (int) ((double) (a + 1) * 100 / totalTestingSamples);
+            if (progress != lastProgress) {
+                lastProgress = progress;
+
+                int filled = progress * barLength / 100;
+                String filledBar = "#".repeat(filled);
+                String emptyBar = " ".repeat(barLength - filled);
+
+                System.out.printf("\rProgress: %d/%d (%.2f%%) [%s%s]", a + 1, totalTestingSamples, (double) progress, filledBar, emptyBar);
+            }
         }
-        System.out.println("Thanks for waiting!!!");
-        return new double[][][] { trainingInputs, trainingOutputs, testingInputs, testingOutputs };
+        System.out.println("\nTesting Input Conversion Complete.");
+
+        // ----------------------------------------------------
+        // 4. Converting Testing Outputs (Labels to One-Hot)
+        // ----------------------------------------------------
+        System.out.println("Converting Testing Outputs (Labels)...");
+        for (int a = 0; a < csvTestingOutputColumn.size(); a++) {
+            testingOutputs[a] = new Tensor(10, 1);
+            int label = csvTestingOutputColumn.get(a);
+            if (label >= 0 && label < 10) {
+                testingOutputs[a].getData()[label] = 1.0;
+            }
+        }
+
+        System.out.println("Thanks for waiting!!! Data preparation successful.");
+        return new Tensor[][]{trainingInputs, trainingOutputs, testingInputs, testingOutputs};
     }
 
     void triggerNetworkTraining() {
@@ -316,15 +392,15 @@ public class MNISTFrame extends JFrame {
     }
 
     private void printSingleTrainingEntry() {
-        //        var random = new Random();
-        int randomIndex = 0; //random.nextInt(this.trainingInputs.length);
-        double[] trainingInput = trainingInputs[randomIndex];
-        double[] trainingOutput = trainingOutputs[randomIndex];
+        var random = new Random();
+        int randomIndex = random.nextInt(this.trainingInputs.length);
+        Tensor trainingInput = trainingInputs[randomIndex];
+        Tensor trainingOutput = trainingOutputs[randomIndex];
         int index = 0;
         // Printing as console image.
         for (int a = 0; a < 28; a++) {
             for (int b = 0; b < 28; b++) {
-                double input = trainingInput[index++];
+                double input = trainingInput.getData()[index++];
                 System.out.print(input == 0 ? "_" : "#");
             }
             System.out.println();
@@ -333,7 +409,7 @@ public class MNISTFrame extends JFrame {
         index = 0;
         for (int a = 0; a < 28; a++) {
             for (int b = 0; b < 28; b++) {
-                double input = trainingInput[index];
+                double input = trainingInput.getData()[index];
                 System.out.print(input);
                 if (index != (28 * 28) - 1) {
                     System.out.print(",");
@@ -342,8 +418,8 @@ public class MNISTFrame extends JFrame {
             }
             System.out.println();
         }
-        System.out.println(STR."Label: \{Arrays.toString(trainingOutput)}");
-        double[] prediction = jNeuralNetwork.processInputs(trainingInput);
-        System.out.println(STR."Prediction: \{Arrays.toString(prediction)}");
+        System.out.println(STR."Label: \{trainingOutput}");
+        Tensor prediction = jNeuralNetwork.processInputs(trainingInput);
+        System.out.println(STR."Prediction: \{prediction}");
     }
 }
