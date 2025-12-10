@@ -12,7 +12,6 @@ import com.mkproductions.jnn.cpu.entity.LossFunctionAble;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 import com.mkproductions.jnn.networks.JSequential;
 import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
-import com.mkproductions.jnn.networks.JNeuralNetwork;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,7 +19,6 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -76,7 +74,7 @@ public class MNISTFrame extends JFrame {
         leftPanel.add(mnistNetworkSettingsJPanel);
         add(leftPanel);
         add(this.mnistDrawningJPanel);
-        /**        addKeyListener(new KeyAdapter() {
+        /*        addKeyListener(new KeyAdapter() {
          //            @Override
          //            public void keyPressed(KeyEvent e) {
          //                super.keyPressed(e);
@@ -148,8 +146,7 @@ public class MNISTFrame extends JFrame {
                 new PoolingLayer(2, 2, PoolingLayer.PoolingLayerType.MAX), // Pool
                 new ConvolutionLayer(3, 32, 1, 1, ActivationFunction.RE_LU), // CNN Relu
                 new PoolingLayer(2, 2, PoolingLayer.PoolingLayerType.MAX), // Pool
-                new FlattenLayer(),
-                new DenseLayer(10, ActivationFunction.SOFTMAX), // Sigmoid layer
+                new FlattenLayer(), new DenseLayer(10, ActivationFunction.SOFTMAX), // Sigmoid layer
         };
         jNeuralNetwork = new JSequential( // Neural Network.
                 new int[]{1, 28, 28}, // Input shape
@@ -302,7 +299,7 @@ public class MNISTFrame extends JFrame {
             for (int b = 0; b < csvTrainingDataTable.getFirst().size(); b++) {
                 double value = csvTrainingDataTable.get(a).get(b);
                 // Assume the CSV data order matches the flattened tensor data order
-                trainingInputs[a].getData()[b] = value / 255.0; // Normalize pixel data
+                trainingInputs[a].getData().set(b, value / 255.0); // Normalize pixel data
             }
 
             // --- Progress Tracking Logic ---
@@ -328,7 +325,7 @@ public class MNISTFrame extends JFrame {
             trainingOutputs[a] = new Tensor(10, 1);
             int label = csvTrainingOutputColumn.get(a);
             if (label >= 0 && label < 10) {
-                trainingOutputs[a].getData()[label] = 1.0;
+                trainingOutputs[a].getData().set(label, 1.0);
             } else {
                 // Handle invalid label if necessary
                 throw new RuntimeException(STR."Invalid label: \{label}");
@@ -344,7 +341,7 @@ public class MNISTFrame extends JFrame {
             testingInputs[a] = new Tensor(1, 28, 28);
             for (int b = 0; b < csvTestingDataTable.getFirst().size(); b++) {
                 double value = csvTestingDataTable.get(a).get(b);
-                testingInputs[a].getData()[b] = value / 255.0; // Normalize pixel data
+                testingInputs[a].getData().set(b, value / 255.0); // Normalize pixel data
             }
 
             // --- Progress Tracking Logic ---
@@ -369,7 +366,7 @@ public class MNISTFrame extends JFrame {
             testingOutputs[a] = new Tensor(10, 1);
             int label = csvTestingOutputColumn.get(a);
             if (label >= 0 && label < 10) {
-                testingOutputs[a].getData()[label] = 1.0;
+                testingOutputs[a].getData().set(label, 1.0);
             }
         }
 
@@ -400,7 +397,7 @@ public class MNISTFrame extends JFrame {
         // Printing as console image.
         for (int a = 0; a < 28; a++) {
             for (int b = 0; b < 28; b++) {
-                double input = trainingInput.getData()[index++];
+                double input = trainingInput.getData().get(index++);
                 System.out.print(input == 0 ? "_" : "#");
             }
             System.out.println();
@@ -409,7 +406,7 @@ public class MNISTFrame extends JFrame {
         index = 0;
         for (int a = 0; a < 28; a++) {
             for (int b = 0; b < 28; b++) {
-                double input = trainingInput.getData()[index];
+                double input = trainingInput.getData().get(index);
                 System.out.print(input);
                 if (index != (28 * 28) - 1) {
                     System.out.print(",");

@@ -5,7 +5,7 @@ package com.mkproductions.jnn.cpu.entity;
  * It provides a single method, {@code map}, which is intended to transform or process
  * a tensor value at a specific flat index. Implementations of this interface can define
  * various mapping logic based on the indexing and value of tensor elements.
- *
+ * <p>
  * Typical use cases for this interface include applying transformations, scaling values,
  * or adapting tensor data within computational workflows.
  */

@@ -8,8 +8,7 @@ import com.mkproductions.jnn.cpu.layers.FlattenLayer;
 import com.mkproductions.jnn.cpu.layers.PoolingLayer;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
 
-import com.mkproductions.jnn.gpu.solver.ActivationFunctionSolver;
-import com.mkproductions.jnn.gpu.TaskGraphMatrixSolver;
+import com.mkproductions.jnn.gpu.solver.TaskGraphMatrixSolver;
 import com.mkproductions.jnn.networks.JSequential;
 import com.mkproductions.jnn.networks.JGPUNeuralNetwork;
 import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
@@ -30,7 +29,6 @@ public class Demo {
         //        testAdditionOperationOnDevice();
         //        testMatrixMultiplicationOperationOnDevice();
         //        testingRandomNumberGenerator();
-                testingNetworkInitialization();
         //        testingInterfaceFunctions();
 //        testingConvolutionNeuralNetwork();
         //        testingTensorOperations();
@@ -51,21 +49,21 @@ public class Demo {
         JSequential.randomize(input);
         // Step 4: Forward propagate
         //        Tensor result = ;
-        cnn.forwardPropagation(input);
+        cnn.predict(input);
 
         // Step 5: Print output
         //        System.out.println(STR."Output shape: \{Arrays.toString(result.getShape())}");
         //        System.out.println(STR."Output data: \{Arrays.toString(result.getData())}");
     }
 
-    private static void testingTensorOperations() {
-        Tensor input = new Tensor(new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 3, 3);
-
-        Tensor kernel = new Tensor(new double[] { 1, 0, 0, -1 }, 2, 2);
-
-        Tensor result = Tensor.convolve2D(input, kernel, 1, 0);
-        System.out.println(result);
-    }
+//    private static void testingTensorOperations() {
+//        Tensor input = new Tensor(new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 3, 3);
+//
+//        Tensor kernel = new Tensor(new double[] { 1, 0, 0, -1 }, 2, 2);
+//
+//        Tensor result = Tensor.convolve2D(input, kernel, 1, 0);
+//        System.out.println(result);
+//    }
 
     private static void testingInterfaceFunctions() {
         Matrix2DDouble matrix1 = new Matrix2DDouble(5, 5);
@@ -83,35 +81,34 @@ public class Demo {
         System.out.println(matrix1);
     }
 
-    private static void testingNetworkInitialization() {
-        JGPUNeuralNetwork jgpuNeuralNetwork = getJgpuNeuralNetwork();
-        jgpuNeuralNetwork.setLearningRate(0.5);
-        for (double[] trainingInput : trainingInputs) {
-            System.out.println(Arrays.toString(jgpuNeuralNetwork.predict(trainingInput)));
-        }
-        jgpuNeuralNetwork.setLearningRate(0.01);
-        for (int i = 0; i < 100; i++) {
-            jgpuNeuralNetwork.train(trainingInputs, trainingTargets, 1);
-        }
-        System.out.println();
-        for (double[] trainingInput : trainingInputs) {
-            System.out.println(Arrays.toString(jgpuNeuralNetwork.predict(trainingInput)));
-        }
-    }
+//    private static void testingNetworkInitialization() {
+//        JGPUNeuralNetwork jgpuNeuralNetwork = getJgpuNeuralNetwork();
+//        jgpuNeuralNetwork.setLearningRate(0.5);
+//        for (double[] trainingInput : trainingInputs) {
+//            System.out.println(Arrays.toString(jgpuNeuralNetwork.predict(trainingInput)));
+//        }
+//        jgpuNeuralNetwork.setLearningRate(0.01);
+//        for (int i = 0; i < 100; i++) {
+//            jgpuNeuralNetwork.train(trainingInputs, trainingTargets, 1);
+//        }
+//        System.out.println();
+//        for (double[] trainingInput : trainingInputs) {
+//            System.out.println(Arrays.toString(jgpuNeuralNetwork.predict(trainingInput)));
+//        }
+//    }
 
-    private static @NotNull JGPUNeuralNetwork getJgpuNeuralNetwork() {
-        JGPUNeuralNetwork jgpuNeuralNetwork = new JGPUNeuralNetwork(// Network.
-                LossFunction.BINARY_CROSS_ENTROPY, // Loss function.
-                2, // Number of inputs.
-                new DenseLayer(8, ActivationFunction.SIGMOID), // Dense Layer
-                new DenseLayer(8, ActivationFunction.SIGMOID), // Dense Layer
-                new DenseLayer(1, ActivationFunction.SIGMOID)  // Dense Layer
-        );
-        jgpuNeuralNetwork.initializeNetwork();
-        jgpuNeuralNetwork.printData();
-        System.out.println("==========================NETWORK DATA==========================");
-        return jgpuNeuralNetwork;
-    }
+//    private static @NotNull JGPUNeuralNetwork getJgpuNeuralNetwork() {
+//        JGPUNeuralNetwork jgpuNeuralNetwork = new JGPUNeuralNetwork(// Network.
+//                LossFunction.BINARY_CROSS_ENTROPY, // Loss function.
+//                2, // Number of inputs.
+//                new DenseLayer(8, ActivationFunction.SIGMOID), // Dense Layer
+//                new DenseLayer(8, ActivationFunction.SIGMOID), // Dense Layer
+//                new DenseLayer(1, ActivationFunction.SIGMOID)  // Dense Layer
+//        );
+//        jgpuNeuralNetwork.printData();
+//        System.out.println("==========================NETWORK DATA==========================");
+//        return jgpuNeuralNetwork;
+//    }
 
     private static void testingRandomNumberGenerator() {
         Matrix2DDouble matrix1 = new Matrix2DDouble(5, 5);

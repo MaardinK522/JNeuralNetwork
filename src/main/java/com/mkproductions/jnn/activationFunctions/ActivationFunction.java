@@ -25,7 +25,7 @@ public enum ActivationFunction {
      * - Equation: Always returns 0.0
      * - Derivative: Always returns 0.0
      */
-    NONE(((_, _) -> 0.0F), (_, _) -> 0.0F), // NONE
+    NONE(((_, _) -> 0.0F), (_, _) -> 0.0F, 0), // NONE
     /**
      * The SIGMOID activation function is widely used in neural networks,
      * particularly in use cases involving binary classification.
@@ -49,7 +49,7 @@ public enum ActivationFunction {
      * Use cases for the SIGMOID activation function include hidden layers in neural networks,
      * output neurons in binary classification models, and probabilistic output scenarios.
      */
-    SIGMOID(((_, value) -> 1.0 / (1 + Math.exp(-value))), (_, y) -> y * (1 - y)), // Sigmoid activation function with derivative.
+    SIGMOID(((_, value) -> 1.0 / (1 + Math.exp(-value))), (_, y) -> y * (1 - y), 1), // Sigmoid activation function with derivative.
     /**
      * Represents an activation function called ReLU (Rectified Linear Unit).
      * <ul>
@@ -59,7 +59,7 @@ public enum ActivationFunction {
      * <p>
      * ReLU is commonly used in neural networks to introduce non-linearity, while maintaining computational efficiency.
      */
-    RE_LU((_, x) -> Math.max(0, x), (_, y) -> (y < 0) ? 0 : 1), // Rectified Linear Unit activation function with derivative.
+    RE_LU((_, x) -> Math.max(0, x), (_, y) -> (y < 0) ? 0 : 1, 2), // Rectified Linear Unit activation function with derivative.
     /**
      * Represents the linear activation function.
      * <p>
@@ -73,7 +73,7 @@ public enum ActivationFunction {
      * <p>
      * Used for scenarios where no non-linearity is required, or a simple identity mapping is sufficient.
      */
-    LINEAR((_, x) -> x, (_, _) -> 1), // Linear activation function with derivative.
+    LINEAR((_, x) -> x, (_, _) -> 1, 3), // Linear activation function with derivative.
     /**
      * Represents the hyperbolic tangent (tanh) activation function as an enumeration constant.
      * The tanh function is defined as:
@@ -95,7 +95,7 @@ public enum ActivationFunction {
      * - equation: A TensorMapAbleFunction instance implementing the tanh mathematical function.
      * - derivative: A TensorMapAbleFunction instance computing the derivative of the tanh function.
      */
-    TAN_H((_, x) -> (Math.exp(x) - Math.exp(-x)) / (Math.exp(x) + Math.exp(-x)), (_, y) -> 1 - (y * y)), // Hyper tangent activation function with derivative.
+    TAN_H((_, x) -> (Math.exp(x) - Math.exp(-x)) / (Math.exp(x) + Math.exp(-x)), (_, y) -> 1 - (y * y), 4), // Hyper tangent activation function with derivative.
     /**
      * The SOFTMAX activation function is a commonly used activation function for neural network output layers
      * in classification problems. It is particularly useful in multiclass classification, as it converts raw
@@ -117,8 +117,7 @@ public enum ActivationFunction {
      * - The SOFTMAX function is parameterized with placeholder values for its `equation` and `derivative`,
      * which are properly implemented to support the mathematical definition.
      */
-    SOFTMAX(((_, _) -> 0.0F), (_, _) -> 0.0F), // Soft max activation without function or derivative.
-    ;
+    SOFTMAX(((_, _) -> 0.0F), (_, _) -> 0.0F, 5); // Soft max activation without function or derivative.
     /**
      * Represents the mathematical function applied to tensors within an activation function.
      * This variable serves as a functional contract that defines how input tensor data
@@ -148,6 +147,8 @@ public enum ActivationFunction {
      * during computations.
      */
     final private TensorMapAbleFunction derivative;
+    // Index for GPU support
+    private final int index;
 
     /**
      * Constructs an ActivationFunction with a specified equation and its corresponding derivative.
@@ -155,9 +156,10 @@ public enum ActivationFunction {
      * @param equation   the primary tensor mapping function representing the activation equation
      * @param derivative the tensor mapping function representing the derivative of the activation equation
      */
-    ActivationFunction(TensorMapAbleFunction equation, TensorMapAbleFunction derivative) {
+    ActivationFunction(TensorMapAbleFunction equation, TensorMapAbleFunction derivative, int index) {
         this.equation = equation;
         this.derivative = derivative;
+        this.index = index;
     }
 
     /**
@@ -174,9 +176,13 @@ public enum ActivationFunction {
      * of the activation equation for this activation function.
      *
      * @return the tensor mapping function that computes the derivative of
-     *         the activation equation.
+     * the activation equation.
      */
     public TensorMapAbleFunction getDerivative() {
         return derivative;
+    }
+
+    public int getIndex() {
+        return index;
     }
 }

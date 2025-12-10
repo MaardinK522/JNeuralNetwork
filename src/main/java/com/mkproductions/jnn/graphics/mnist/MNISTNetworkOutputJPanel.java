@@ -2,6 +2,7 @@ package com.mkproductions.jnn.graphics.mnist;
 
 import com.mkproductions.jnn.cpu.entity.Mapper;
 import com.mkproductions.jnn.cpu.entity.Tensor;
+import uk.ac.manchester.tornado.api.types.arrays.DoubleArray;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,7 +24,7 @@ public class MNISTNetworkOutputJPanel extends JPanel {
         int x = 10;
         int y = 20;
         for (int a = 0; a < 10; a++) {
-            int color = (int) Mapper.mapRangeToRange(prediction.getData()[a], 0, 1, 0, 255);
+            int color = (int) Mapper.mapRangeToRange(prediction.getData().get(a), 0, 1, 0, 255);
             //            int color = (this.prediction[a] < 1) ? 0 : 255;
             color = Math.abs(color);
             //            if (color > 255) color = 255;
@@ -52,7 +53,7 @@ public class MNISTNetworkOutputJPanel extends JPanel {
             }
             System.out.println();
         }
-        Tensor input = new Tensor(mappedGridData, 1, 28, 28);
+        Tensor input = new Tensor(DoubleArray.fromArray(mappedGridData), 1, 28, 28);
         this.prediction = MNISTFrame.processNetworkInputs(input);
         System.out.println(STR."Prediction: \{this.prediction}");
         System.out.println();

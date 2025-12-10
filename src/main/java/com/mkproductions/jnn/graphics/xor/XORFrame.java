@@ -31,8 +31,7 @@ public class XORFrame extends JFrame {
                         if (e.isControlDown()) dispose();
                     }
                     case KeyEvent.VK_UP -> {
-                        if (windowPanel.getCellCount() <= 100)
-                            windowPanel.setCellCount(windowPanel.getCellCount() + 10);
+                        if (windowPanel.getCellCount() <= 100) windowPanel.setCellCount(windowPanel.getCellCount() + 10);
                     }
                     case KeyEvent.VK_DOWN -> {
                         if (windowPanel.getCellCount() >= 1) windowPanel.setCellCount(windowPanel.getCellCount() - 10);

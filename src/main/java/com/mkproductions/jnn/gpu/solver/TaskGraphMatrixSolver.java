@@ -1,9 +1,7 @@
-package com.mkproductions.jnn.gpu;
+package com.mkproductions.jnn.gpu.solver;
 
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.lossFunctions.LossFunction;
-import com.mkproductions.jnn.gpu.solver.LossFunctionSolver;
-import com.mkproductions.jnn.gpu.solver.ActivationFunctionSolver;
 import uk.ac.manchester.tornado.api.TaskGraph;
 import uk.ac.manchester.tornado.api.annotations.Parallel;
 import uk.ac.manchester.tornado.api.types.matrix.Matrix2DDouble;
@@ -76,7 +74,7 @@ public class TaskGraphMatrixSolver {
 
     public static void transpose(TaskGraph taskGraph, String taskID, Matrix2DDouble matrix, Matrix2DDouble result) {
         if (matrix.getNumRows() != result.getNumColumns() || matrix.getNumColumns() != result.getNumRows()) {
-            System.err.println(matrix + " && " + result);
+            System.err.println(STR."\{matrix} && \{result}");
             throw new IllegalArgumentException("Given result matrix does not have proper dimension.");
         }
         taskGraph.task(taskID, MatrixOperationSolver::transpose, matrix, result);

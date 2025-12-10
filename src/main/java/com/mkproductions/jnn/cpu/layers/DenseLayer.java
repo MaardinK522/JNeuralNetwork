@@ -2,12 +2,7 @@ package com.mkproductions.jnn.cpu.layers;
 
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.cpu.entity.Tensor;
-import com.mkproductions.jnn.networks.JDenseSequential;
-import com.mkproductions.jnn.networks.JNeuralNetwork;
 import com.mkproductions.jnn.networks.JSequential;
-
-import java.util.stream.IntStream;
-
 
 public class DenseLayer extends Layer {
     private final int numberOfNodes;

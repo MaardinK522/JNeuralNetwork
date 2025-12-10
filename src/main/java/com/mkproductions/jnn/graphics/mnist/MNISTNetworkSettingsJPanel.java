@@ -1,7 +1,6 @@
 package com.mkproductions.jnn.graphics.mnist;
 
 import com.mkproductions.jnn.lossFunctions.LossFunction;
-import com.mkproductions.jnn.networks.JNeuralNetwork;
 import com.mkproductions.jnn.networks.JSequential;
 import com.mkproductions.jnn.optimzers.JNetworkOptimizer;
 

@@ -1,10 +1,11 @@
-package com.mkproductions.jnn.cpu.layers;
+package com.mkproductions.jnn.gpu.gpu_layers;
 
 import com.mkproductions.jnn.activationFunctions.ActivationFunction;
 import com.mkproductions.jnn.cpu.entity.Tensor;
+import uk.ac.manchester.tornado.api.TornadoExecutionPlan;
 
-public class FlattenLayer extends Layer {
-    public FlattenLayer() {
+public class Flatten extends GeneralLayer {
+    public Flatten() {
         super("Flatten", ActivationFunction.NONE);
     }
 
@@ -15,12 +16,11 @@ public class FlattenLayer extends Layer {
 
     @Override
     public Tensor[] backward(Tensor input, Tensor gradients) {
-        Tensor propagatedError = gradients.reshape(input.getShape().toHeapArray());
-        return new Tensor[]{null, null, propagatedError};
+        return new Tensor[]{null, null, gradients.reshape(input.getShape().toHeapArray())};
     }
 
     @Override
-    public String toString() {
-        return "FlattenLayer{}";
+    protected TornadoExecutionPlan[] prepareTaskGraphs() {
+        return new TornadoExecutionPlan[0];
     }
 }

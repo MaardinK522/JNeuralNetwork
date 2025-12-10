@@ -45,7 +45,7 @@ public class PoolingLayer extends Layer {
 
     @Override
     public Tensor[] backward(Tensor input, Tensor gradients) {
-        Tensor propagatedGradients = new Tensor(input.getShape());
+        Tensor propagatedGradients = new Tensor(input.getShape().toHeapArray());
         if (poolingLayerType == PoolingLayer.PoolingLayerType.MAX) {
             propagatedGradients = maxPoolingBackward(propagatedGradients);
         } else if (poolingLayerType == PoolingLayer.PoolingLayerType.AVG) {
@@ -55,35 +55,28 @@ public class PoolingLayer extends Layer {
     }
 
     private Tensor maxPoolingBackward(Tensor input) {
-        int C = input.getShape()[0];
-        int H_in = input.getShape()[1];
-        int W_in = input.getShape()[2];
-
+        int C = input.getShape().toHeapArray()[0];
+        int H_in = input.getShape().toHeapArray()[1];
+        int W_in = input.getShape().toHeapArray()[2];
         int H_out = (H_in - poolSize) / stride + 1;
         int W_out = (W_in - poolSize) / stride + 1;
-
         if (H_out <= 0 || W_out <= 0) {
             throw new IllegalArgumentException("Pooling resulted in zero or negative dimensions.");
         }
         Tensor output = new Tensor(C, H_in, W_in);
         this.cachedMaxIndices = new Tensor(C, H_out, W_out, 2);
-
         for (int c = 0; c < C; c++) {
             for (int h_out = 0; h_out < H_out; h_out++) {
                 for (int w_out = 0; w_out < W_out; w_out++) {
-
                     double max = Double.NEGATIVE_INFINITY;
                     int max_r = -1, max_c = -1;
-
                     int h_start = h_out * stride;
                     int w_start = w_out * stride;
-
                     for (int p_h = 0; p_h < poolSize; p_h++) {
                         for (int p_w = 0; p_w < poolSize; p_w++) {
                             int r = h_start + p_h;
                             int c_in = w_start + p_w;
                             double entry = input.getEntry(c, r, c_in);
-
                             if (entry > max) {
                                 max = entry;
                                 max_r = r;
@@ -101,9 +94,9 @@ public class PoolingLayer extends Layer {
     }
 
     private Tensor averagePoolBackward(Tensor input) {
-        int C = input.getShape()[0];
-        int H_in = input.getShape()[1];
-        int W_in = input.getShape()[2];
+        int C = input.getShape().toHeapArray()[0];
+        int H_in = input.getShape().toHeapArray()[1];
+        int W_in = input.getShape().toHeapArray()[2];
         int H_out = (H_in - poolSize) / stride + 1;
         int W_out = (W_in - poolSize) / stride + 1;
         if (H_out <= 0 || W_out <= 0) {
@@ -117,7 +110,6 @@ public class PoolingLayer extends Layer {
                     double sum = 0.0;
                     int h_start = h_out * stride;
                     int w_start = w_out * stride;
-
                     for (int p_h = 0; p_h < poolSize; p_h++) {
                         for (int p_w = 0; p_w < poolSize; p_w++) {
                             sum += input.getEntry(c, h_start + p_h, w_start + p_w);
@@ -134,36 +126,27 @@ public class PoolingLayer extends Layer {
         if (input.getRank() != 3) {
             throw new IllegalArgumentException("Input for pooling must be a Rank-3 Tensor (C, H, W).");
         }
-
-        int C = input.getShape()[0];
-        int H_in = input.getShape()[1];
-        int W_in = input.getShape()[2];
-
+        int C = input.getShape().toHeapArray()[0];
+        int H_in = input.getShape().toHeapArray()[1];
+        int W_in = input.getShape().toHeapArray()[2];
         int H_out = (H_in - poolSize) / stride + 1;
         int W_out = (W_in - poolSize) / stride + 1;
-
         if (H_out <= 0 || W_out <= 0) {
             throw new IllegalArgumentException("Pooling resulted in zero or negative dimensions.");
         }
-
         Tensor output = new Tensor(C, H_out, W_out);
-
         for (int c = 0; c < C; c++) {
             for (int h_out = 0; h_out < H_out; h_out++) {
                 for (int w_out = 0; w_out < W_out; w_out++) {
-
                     double max = Double.NEGATIVE_INFINITY;
-
                     int h_start = h_out * stride;
                     int w_start = w_out * stride;
-
                     for (int p_h = 0; p_h < poolSize; p_h++) {
                         for (int p_w = 0; p_w < poolSize; p_w++) {
                             double entry = input.getEntry(c, h_start + p_h, w_start + p_w);
                             max = Math.max(max, entry);
                         }
                     }
-
                     output.setEntry(max, c, h_out, w_out);
                 }
             }
@@ -176,30 +159,22 @@ public class PoolingLayer extends Layer {
         if (input.getRank() != 3) {
             throw new IllegalArgumentException("Input for pooling must be a Rank-3 Tensor (C, H, W).");
         }
-
-        int C = input.getShape()[0];
-        int H_in = input.getShape()[1];
-        int W_in = input.getShape()[2];
-
+        int C = input.getShape().toHeapArray()[0];
+        int H_in = input.getShape().toHeapArray()[1];
+        int W_in = input.getShape().toHeapArray()[2];
         int H_out = (H_in - poolSize) / stride + 1;
         int W_out = (W_in - poolSize) / stride + 1;
-
         if (H_out <= 0 || W_out <= 0) {
             throw new IllegalArgumentException("Pooling resulted in zero or negative dimensions.");
         }
-
         Tensor output = new Tensor(C, H_out, W_out);
-
         for (int c = 0; c < C; c++) {
             for (int h_out = 0; h_out < H_out; h_out++) {
                 for (int w_out = 0; w_out < W_out; w_out++) {
-
                     double sum = 0.0;
                     int count = 0;
-
                     int h_start = h_out * stride;
                     int w_start = w_out * stride;
-
                     for (int p_h = 0; p_h < poolSize; p_h++) {
                         for (int p_w = 0; p_w < poolSize; p_w++) {
                             double entry = input.getEntry(c, h_start + p_h, w_start + p_w);
@@ -207,13 +182,11 @@ public class PoolingLayer extends Layer {
                             count++;
                         }
                     }
-
                     double avg = sum / count;
                     output.setEntry(avg, c, h_out, w_out);
                 }
             }
         }
-
         return output;
     }
 

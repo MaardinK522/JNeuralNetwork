@@ -10,21 +10,21 @@ public enum LossFunction implements LossFunctionAble {
             // Ensure input matrices have the same dimensions
             Tensor.validateTensors(prediction, target);
             // Calculate the squared error for each element in the matrix
-            return Tensor.tensorMapping(prediction, (flatIndex, _) -> Math.pow(prediction.getData()[flatIndex] - target.getData()[flatIndex], 2));
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> Math.pow(prediction.getData().get(flatIndex) - target.getData().get(flatIndex), 2));
         }
 
         @Override
         public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
             Tensor.validateTensors(prediction, target);
-            return Tensor.tensorMapping(prediction, ((flatIndex, _) -> -2 * (prediction.getData()[flatIndex] - target.getData()[flatIndex])));
+            return Tensor.tensorMapping(prediction, ((flatIndex, _) -> -2 * (prediction.getData().get(flatIndex) - target.getData().get(flatIndex))));
         }
-    }, // Mean squared error
+    }, // Mean Squared Error
     MEAN_ABSOLUTE_ERROR {
         @Override
         public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
             Tensor.validateTensors(prediction, target);
             return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
-                var error = prediction.getData()[flatIndex] - target.getData()[flatIndex];
+                var error = prediction.getData().get(flatIndex) - target.getData().get(flatIndex);
                 return Math.abs(error);
             });
         }
@@ -33,11 +33,11 @@ public enum LossFunction implements LossFunctionAble {
         public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
             Tensor.validateTensors(prediction, target);
             return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
-                double error = target.getData()[flatIndex] - prediction.getData()[flatIndex];
+                double error = target.getData().get(flatIndex) - prediction.getData().get(flatIndex);
                 return error >= 0 ? 1 : -1;
             });
         }
-    }, // Mean Absolute error.
+    }, // Mean Absolute Error.
     // // TODO: Implement this loss function with the proper derivative.
     //    SMOOTH_MEAN_ABSOLUTE_ERROR {
     //        @Override
@@ -84,7 +84,7 @@ public enum LossFunction implements LossFunctionAble {
             Tensor.validateTensors(prediction, target);
             // ... (similar structure as other loss functions)
             return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
-                double error = -target.getData()[flatIndex] + prediction.getData()[flatIndex];
+                double error = -target.getData().get(flatIndex) + prediction.getData().get(flatIndex);
                 return Math.log(Math.cosh(error));
             });
         }
@@ -93,11 +93,11 @@ public enum LossFunction implements LossFunctionAble {
         public Tensor getDerivativeTensor(Tensor prediction, Tensor target) {
             Tensor.validateTensors(prediction, target);
             return Tensor.tensorMapping(prediction, (FlatIndex, _) -> {
-                double error = -target.getData()[FlatIndex] + prediction.getData()[FlatIndex];
-                return -Math.tanh(error);
+                double error = -target.getData().get(FlatIndex) + prediction.getData().get(FlatIndex);
+                return -Math.tan(error);
             });
         }
-    }, // Log(cosh(x)
+    }, // Logarithmic
     BINARY_CROSS_ENTROPY {
         @Override
         public Tensor getLossFunctionTensor(Tensor prediction, Tensor target) {
@@ -105,8 +105,8 @@ public enum LossFunction implements LossFunctionAble {
             Tensor.validateTensors(prediction, target);
             // Calculate binary cross-entropy loss for each element
             return Tensor.tensorMapping(prediction, (flatIndex, _) -> {
-                double y = target.getData()[flatIndex];
-                double p = prediction.getData()[flatIndex];
+                double y = target.getData().get(flatIndex);
+                double p = prediction.getData().get(flatIndex);
                 // Clip probabilities to prevent log(0)
                 p = Math.max(p, 1e-15);
                 p = Math.min(p, 1 - 1e-15);
@@ -120,7 +120,7 @@ public enum LossFunction implements LossFunctionAble {
             Tensor.validateTensors(prediction, target);
 
             // Calculate the derivative of binary cross-entropy loss for each element
-            return Tensor.tensorMapping(prediction, (flatIndex, _) -> (target.getData()[flatIndex] - prediction.getData()[flatIndex]));
+            return Tensor.tensorMapping(prediction, (flatIndex, _) -> (target.getData().get(flatIndex) - prediction.getData().get(flatIndex)));
         }
     }, // Binary Cross Entropy
     CATEGORICAL_CROSS_ENTROPY {
@@ -131,7 +131,7 @@ public enum LossFunction implements LossFunctionAble {
             // Clip predictions to prevent log(0)
             predictions = Tensor.clip(predictions, 1e-15, 1 - 1e-15);
             // Calculate categorical cross-entropy loss for each element
-            return Tensor.tensorMapping(predictions, (flatIndex, value) -> targets.getData()[flatIndex] * Math.log(value));
+            return Tensor.tensorMapping(predictions, (flatIndex, value) -> targets.getData().get(flatIndex) * Math.log(value));
         }
 
         public Tensor getDerivativeTensor(Tensor predictions, Tensor targets) {
@@ -142,7 +142,8 @@ public enum LossFunction implements LossFunctionAble {
                 //                double y = targets.getEntry(a, b);
                 //                double p = Math.max(Math.min(value, 1 - 1e-15), 1e-15);
                 //                return (y / p - (1 - y) / (1 - p));
-                return targets.getData()[a] - value;
+                targets.getData().set(a, targets.getData().get(a) - value);
+                return targets.getData().get(a);
             });
         }
     }, // Categorical Cross Entropy
@@ -154,7 +155,7 @@ public enum LossFunction implements LossFunctionAble {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Calculate sparse categorical cross-entropy loss for each element
-            return Tensor.tensorMapping(new Tensor(predictions.getShape()), (flatIndex, _) -> {
+            return Tensor.tensorMapping(new Tensor(predictions.getShape().toHeapArray()), (flatIndex, _) -> {
                 double predictedProb = predictions.getEntry(flatIndex);
                 predictedProb = Math.max(predictedProb, 1e-15); // Clip to prevent log(0)
                 return -Math.log(predictedProb);
@@ -164,8 +165,8 @@ public enum LossFunction implements LossFunctionAble {
         @Override
         public Tensor getDerivativeTensor(Tensor predictions, Tensor trueLabels) {
             // Check for dimension compatibility
-            for (int shapeIndex = 0; shapeIndex < predictions.getShape().length; shapeIndex++) {
-                if (predictions.getShape()[shapeIndex] != trueLabels.getShape()[shapeIndex]) {
+            for (int shapeIndex = 0; shapeIndex < predictions.getShape().getSize(); shapeIndex++) {
+                if (predictions.getShape().toHeapArray()[shapeIndex] != trueLabels.getShape().toHeapArray()[shapeIndex]) {
                     throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
                 }
             }
@@ -174,11 +175,7 @@ public enum LossFunction implements LossFunctionAble {
                 throw new IllegalArgumentException("Predictions and targets must have the same dimensions");
             }
             // Calculate sparse categorical cross-entropy loss for each element
-            return Tensor.tensorMapping(new Tensor(predictions.getShape()), (flatIndex, _) -> {
-                double predictedProb = predictions.getEntry(flatIndex);
-                predictedProb = Math.max(predictedProb, 1e-15); // Clip to prevent log(0)
-                return -Math.log(predictedProb);
-            });
+            return Tensor.tensorMapping(new Tensor(predictions.getShape().toHeapArray()), (flatIndex, _) -> predictions.getEntry(flatIndex) - trueLabels.getEntry(flatIndex));
         }
-    },
+    }, // Sparse Categorical Cross Entropy
 }
